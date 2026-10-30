@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gitnow"
+version = "0.1.0"
+description = "GitNow - a git TUI panel: status / stage / commit / log / diff / push / pull"
+requires-python = ">=3.10"
+dependencies = ["textual>=1.0"]
+
+[project.scripts]
+gitnow = "gitnow.__main__:main"
+
+[tool.setuptools]
+packages = ["gitnow", "gitnow.panels"]
+
+[tool.setuptools.package-data]
+gitnow = ["*.tcss"]

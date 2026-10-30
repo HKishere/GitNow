@@ -1,0 +1,85 @@
+/* GitNow theme - color blocks instead of frames; only the focused panel gets a visible border.
+   Tweak colors here; panels keep an invisible same-color border when unfocused so layout never shifts. */
+
+Screen {
+  background: #0d1117;
+}
+
+#main { height: 1fr; }
+#left { width: 40%; min-width: 34; height: 1fr; }
+
+/* 左上: 文件树 - 深灰蓝块 */
+FileTreePanel {
+  height: 62%;
+  background: #151c28;
+  border: round #151c28;
+  padding: 0 1;
+}
+FileTreePanel:focus { border: round #7aa2f7; }
+
+/* 左下: 已暂存 - 深绿灰块 */
+StagedPanel {
+  height: 1fr;
+  background: #12211a;
+  border: round #12211a;
+  padding: 0 1;
+}
+StagedPanel:focus { border: round #9ece6a; }
+
+/* 右侧: log / diff - 近黑蓝块 */
+RightViewer {
+  width: 1fr;
+  background: #0f1420;
+  border: round #0f1420;
+  padding: 0 1;
+}
+RightViewer:focus { border: round #e0af68; }
+
+Tree { background: transparent; }
+OptionList { background: transparent; }
+#viewer-content { background: transparent; }
+
+/* 底部状态栏 - 亮色条 */
+StatusBar {
+  dock: bottom;
+  height: 1;
+  background: #1f2630;
+}
+#sb-branch { width: auto; }
+#sb-sync { width: auto; margin-left: 1; }
+#sb-counts { width: auto; margin-left: 2; }
+#sb-keys { width: 1fr; text-align: right; }
+
+/* 弹窗 */
+ModalScreen { align: center middle; }
+
+#commit-dialog {
+  width: 72%;
+  height: 55%;
+  background: #161d2b;
+  border: round #7aa2f7;
+  padding: 1 2;
+}
+#cm-title { text-style: bold; margin-bottom: 1; }
+#cm-msg { height: 1fr; background: #0d1117; }
+#cm-hint { color: #565f89; margin-top: 1; }
+
+#confirm-dialog {
+  width: 64%;
+  height: auto;
+  max-height: 60%;
+  background: #2a1418;
+  border: round #f7768e;
+  padding: 1 2;
+}
+#cf-body { margin: 1 0; }
+#cf-hint { color: #8b98b5; }
+
+#help-dialog {
+  width: 72%;
+  height: auto;
+  max-height: 85%;
+  background: #161d2b;
+  border: round #7aa2f7;
+  padding: 1 2;
+}
