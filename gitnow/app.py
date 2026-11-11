@@ -40,6 +40,7 @@ class GitNowApp(App):
         Binding("c", "commit", "提交", show=False),
         Binding("P", "push", "push", show=False),
         Binding("p", "pull", "pull", show=False),
+        Binding("f", "fetch", "fetch", show=False),
         Binding("a", "stage_all", show=False),
         Binding("u", "unstage_all", show=False),
         Binding("question_mark", "help", "帮助", show=False),
@@ -452,6 +453,10 @@ class GitNowApp(App):
     def action_pull(self) -> None:
         """p：拉取更新（--ff-only，有分叉时 git 会报错并经 toast 显示）。"""
         self._mutate(gitbackend.pull, (), "pull")
+
+    def action_fetch(self) -> None:
+        """f：从远程获取更新（不合并，仅更新远程跟踪分支，不改动工作区）。"""
+        self._mutate(gitbackend.fetch, (), "fetch")
 
     # ---- misc ----------------------------------------------------------
     def toggle_tree_mode(self) -> None:

@@ -360,6 +360,16 @@ def pull(cwd: str | Path) -> str:
     return (proc.stderr or proc.stdout).strip() or "已是最新"
 
 
+def fetch(cwd: str | Path) -> str:
+    """从远程获取更新（只下载，不合并，不改动工作区）。
+
+    git fetch 的进度/结果输出走 stderr，所以成功消息也从 stderr 取。
+    与 pull 的区别：fetch 只更新远程跟踪分支，不会改动当前工作区和 HEAD。
+    """
+    proc = git("fetch", cwd=cwd, timeout=180)
+    return (proc.stderr or proc.stdout).strip() or "fetch 完成"
+
+
 def open_editor(path: str | Path) -> None:
     """用 $EDITOR/$VISUAL（缺省 notepad）打开文件；Popen 不等待编辑器退出。"""
     editor = os.environ.get("EDITOR") or os.environ.get("VISUAL") or "notepad"
