@@ -11,6 +11,7 @@ from textual.widgets.tree import TreeNode
 
 from .. import theme
 from ..models import FileEntry, RepoStatus
+from .statusbar import PanelFocused
 
 
 class FileHighlighted(Message):
@@ -116,6 +117,15 @@ class FileTreePanel(Tree):
         self.root.expand()
         for node in self._dir_nodes:
             node.expand()  # 默认全部展开，不用逐个点开
+        if not self._file_nodes:
+            # 工作区没有任何改动：放一行灰色 "nochange" 占位，面板不至于空白。
+            # data.path=None（不可当文件选中），allow_expand=False（无展开三角），
+            # 光标停在上面时 Space/d/e 等文件操作自然成为空操作。
+            self.root.add(
+                Text("nochange", style=theme.FG_DIM),
+                data={"path": None},
+                allow_expand=False,
+            )
         # 恢复光标位置：优先 keep_path（App 传来的上次路径），
         # 失效了（文件已无改动被移除）就退回 highlighted_path，再不行选第一个文件
         target = keep_path or self.highlighted_path
@@ -183,7 +193,8 @@ class FileTreePanel(Tree):
                 self.post_message(FileHighlighted("tree", data["path"]))
 
     def on_focus(self) -> None:
-        """面板刚获得焦点（如 Tab 切换过来）时，立刻让右侧 diff 同步到当前文件。"""
+        """面板刚获得焦点：让右侧 diff 同步到当前文件，并切换状态栏提示上下文。"""
+        self.post_message(PanelFocused("tree"))
         if self.highlighted_path:
             self.post_message(FileHighlighted("tree", self.highlighted_path))
 
@@ -207,22 +218,16 @@ class FileTreePanel(Tree):
         return None
 
     def action_tree_left(self) -> None:
-        """h / ←：光标停在文件夹上时折叠它（已折叠则保持不动）；
-        光标在文件等其他位置时退回全局行为——切换面板（向左）。"""
+        """h / ←：光标停在文件夹上时折叠它（已折叠则保持不动）；"""
         node = self._cursor_dir()
         if node is not None:
             node.collapse()
-        else:
-            self.app.action_cycle_focus_back()
 
     def action_tree_right(self) -> None:
-        """l / →：光标停在文件夹上时展开它（已展开则保持不动）；
-        光标在文件等其他位置时退回全局行为——切换面板（向右）。"""
+        """l / →：光标停在文件夹上时展开它（已展开则保持不动）；"""
         node = self._cursor_dir()
         if node is not None:
             node.expand()
-        else:
-            self.app.action_cycle_focus()
 
     def action_stage_toggle(self) -> None:
         """Space：暂存光标文件（若已暂存则取消，方向判断在 App.stage_toggle）。"""

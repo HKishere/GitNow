@@ -16,7 +16,7 @@ from .gitbackend import GitError
 from .models import LogEntry, RepoStatus
 from .panels.modals import CommitModal, ConfirmModal, HelpModal
 from .panels.staged import StagedPanel
-from .panels.statusbar import StatusBar
+from .panels.statusbar import PanelFocused, StatusBar
 from .panels.tree import FileHighlighted, FileTreePanel
 from .panels.viewer import BackRequested, CommitRequested, LogNearEnd, RightViewer
 
@@ -33,8 +33,8 @@ class GitNowApp(App):
 
     BINDINGS = [
         Binding("tab", "cycle_focus", "切换面板", show=False),
-        Binding("l", "cycle_focus", show=False),
-        Binding("h", "cycle_focus_back", show=False),
+        #Binding("l", "cycle_focus", show=False),
+        #Binding("h", "cycle_focus_back", show=False),
         Binding("t", "toggle_tree_mode", "树模式", show=False),
         Binding("r", "refresh", "刷新", show=False),
         Binding("c", "commit", "提交", show=False),
@@ -317,6 +317,11 @@ class GitNowApp(App):
             log_list.focus()
 
     # ---- focus ----------------------------------------------------------
+    @on(PanelFocused)
+    def _panel_focused(self, event: PanelFocused) -> None:
+        """某个面板获得焦点 → 状态栏右下角提示切换到该面板的键位集。"""
+        self.status_bar.update_keys(event.context)
+
     def action_cycle_focus(self) -> None:
         """Tab/l：在 文件树 → 已暂存 → viewer 之间循环聚焦。弹窗打开时不响应。"""
         if len(self.screen_stack) > 1:

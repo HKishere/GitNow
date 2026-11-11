@@ -3,10 +3,24 @@
 from __future__ import annotations
 
 from textual.containers import Horizontal
+from textual.message import Message
 from textual.widgets import Static
 
 from .. import keys
 from ..models import RepoStatus
+
+
+class PanelFocused(Message):
+    """某个面板获得焦点（各面板 on_focus 时发出）。
+
+    App 接住后调用 StatusBar.update_keys(event.context)，让右下角的
+    快捷键提示跟随当前激活区域变化。context 取 keys.CONTEXT_STATUS_KEYS
+    的键名："tree" / "staged" / "log" / "diff"。
+    """
+
+    def __init__(self, context: str) -> None:
+        self.context = context
+        super().__init__()
 
 
 class StatusBar(Horizontal):
@@ -26,9 +40,17 @@ class StatusBar(Horizontal):
         yield Static("", id="sb-keys")
 
     def on_mount(self) -> None:
-        """挂载时渲染按键提示（内容固定，只做一次）。每项渲染成"高亮按键块 + 说明"。"""
+        """挂载时渲染按键提示（此时还没有焦点上下文，用全局默认表）。"""
+        self.update_keys(None)
+
+    def update_keys(self, context: str | None) -> None:
+        """按当前激活面板刷新右下角按键提示。App 在焦点变化时调用。
+
+        每项渲染成"高亮按键块 + 说明"；context 为 None 或未知时显示
+        全局默认表（keys.STATUS_BAR_KEYS）。
+        """
         hints = "  ".join(
-            f"[#7aa2f7 on #232f47] {k} [/] {d}" for k, d in keys.STATUS_BAR_KEYS
+            f"[#7aa2f7 on #232f47] {k} [/] {d}" for k, d in keys.status_keys(context)
         )
         self.query_one("#sb-keys", Static).update(hints)
 

@@ -71,3 +71,48 @@ STATUS_BAR_KEYS = [
     ("?", "帮助"),
     ("q", "退出"),
 ]
+
+# 按聚焦面板区分的状态栏右下角提示（App 在焦点变化时切换）。
+# 键集是各面板 BINDINGS 的精选子集——状态栏一行放不下完整表，只挑该
+# 上下文里最常用的操作；找不到上下文时退回 STATUS_BAR_KEYS。
+CONTEXT_STATUS_KEYS: dict[str, list[tuple[str, str]]] = {
+    "tree": [
+        ("Tab", "切换面板"),
+        ("Space", "暂存"),
+        ("a", "全部暂存"),
+        ("d", "丢弃"),
+        ("t", "改动↔全部"),
+        ("h/l", "折叠/展开"),
+        ("?", "帮助"),
+        ("q", "退出"),
+    ],
+    "staged": [
+        ("Tab", "切换面板"),
+        ("Space", "取消暂存"),
+        ("a", "全部暂存"),
+        ("u", "全部取消"),
+        ("e", "编辑"),
+        ("?", "帮助"),
+        ("q", "退出"),
+    ],
+    "log": [
+        ("Tab", "切换面板"),
+        ("↑↓/j k", "选择"),
+        ("Enter", "提交详情"),
+        ("Esc", "取消选中"),
+        ("?", "帮助"),
+        ("q", "退出"),
+    ],
+    "diff": [
+        ("Tab", "切换面板"),
+        ("j k/PgUp/PgDn", "滚动"),
+        ("Esc", "返回 log"),
+        ("?", "帮助"),
+        ("q", "退出"),
+    ],
+}
+
+
+def status_keys(context: str | None) -> list[tuple[str, str]]:
+    """返回指定面板上下文的状态栏提示；未知上下文用全局默认表。"""
+    return CONTEXT_STATUS_KEYS.get(context or "", STATUS_BAR_KEYS)

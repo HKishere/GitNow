@@ -10,6 +10,7 @@ from textual.widgets.option_list import Option
 
 from .. import theme
 from ..models import RepoStatus
+from .statusbar import PanelFocused
 from .tree import FileHighlighted
 
 
@@ -76,7 +77,8 @@ class StagedPanel(OptionList):
             self.post_message(FileHighlighted("staged", self.highlighted_path))
 
     def on_focus(self) -> None:
-        """面板刚获得焦点时，让右侧 diff 同步到当前高亮的已暂存文件。"""
+        """面板刚获得焦点：让右侧 diff 同步到当前文件，并切换状态栏提示上下文。"""
+        self.post_message(PanelFocused("staged"))
         if self.highlighted_path:
             self.post_message(FileHighlighted("staged", self.highlighted_path))
 

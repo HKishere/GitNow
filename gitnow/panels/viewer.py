@@ -12,6 +12,7 @@ from textual.widgets.option_list import Option
 
 from .. import gitbackend, theme
 from ..models import LogEntry
+from .statusbar import PanelFocused
 
 MAX_LINES = gitbackend.MAX_DIFF_LINES  # diff 详情最多渲染的行数（超出截断）
 
@@ -72,6 +73,10 @@ class LogList(OptionList):
         if self.highlighted_sha:
             self.post_message(CommitRequested(self.highlighted_sha))
 
+    def on_focus(self) -> None:
+        """log 列表获得焦点：状态栏提示切到 log 上下文。"""
+        self.post_message(PanelFocused("log"))
+
 
 class RightViewer(VerticalScroll):
     """右侧查看器，三种互斥视图（mode 字段标记）：
@@ -112,6 +117,14 @@ class RightViewer(VerticalScroll):
     @property
     def content_static(self) -> Static:
         return self.query_one("#viewer-content", Static)
+
+    def on_focus(self) -> None:
+        """viewer 本体获得焦点（diff/commit 视图）：状态栏提示切到对应上下文。
+
+        log 模式下可聚焦的是内部 log_list（有自己的 on_focus），走不到这里；
+        这里只在 diff/commit 视图直接聚焦 viewer 本身时触发。
+        """
+        self.post_message(PanelFocused("log" if self.mode == "log" else "diff"))
 
     # ---- log mode --------------------------------------------------------
     def populate_log(self, entries: list[LogEntry], complete: bool) -> None:
