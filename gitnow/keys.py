@@ -1,5 +1,10 @@
-"""Keymap tables - single source used by both the status bar and the help modal."""
+"""Keymap tables - single source used by both the status bar and the help modal.
 
+所有 (按键, 说明) 表集中在这里定义：HelpModal 用 all_sections() 展示完整表，
+StatusBar 用 STATUS_BAR_KEYS 展示精简版。改快捷键说明只需要改这一个文件。
+"""
+
+# 全局按键（App 层 BINDINGS，任何面板获得焦点时都生效）
 GLOBAL_KEYS = [
     ("Tab/h/l", "切换面板"),
     ("t", "树: 改动↔全部"),
@@ -12,8 +17,10 @@ GLOBAL_KEYS = [
     ("q", "退出"),
 ]
 
+# 文件区按键（文件树 / 已暂存面板获得焦点时生效）
 FILE_KEYS = [
     ("↑↓/j k", "移动"),
+    ("←→/h l", "折叠/展开文件夹(文件树)"),
     ("Space", "暂存/取消暂存"),
     ("a", "全部暂存"),
     ("u", "全部取消暂存"),
@@ -21,17 +28,20 @@ FILE_KEYS = [
     ("e", "编辑器打开"),
 ]
 
+# 右侧区域按键（log 列表 / diff / commit 详情）
 RIGHT_KEYS = [
     ("j k/PgUp/PgDn", "滚动或移动"),
     ("Enter", "查看提交详情(log 内)"),
     ("Esc", "返回 / 取消选中"),
 ]
 
+# 提交弹窗（CommitModal）
 COMMIT_KEYS = [
     ("Ctrl+S", "提交"),
     ("Esc", "取消"),
 ]
 
+# 确认弹窗（ConfirmModal，如丢弃改动）
 CONFIRM_KEYS = [
     ("y", "确认"),
     ("n/Esc", "取消"),
@@ -39,6 +49,7 @@ CONFIRM_KEYS = [
 
 
 def all_sections() -> list[tuple[str, list[tuple[str, str]]]]:
+    """返回 (分区标题, 按键表) 的完整清单，供 HelpModal 逐节渲染。"""
     return [
         ("全局", GLOBAL_KEYS),
         ("文件区 (文件树 / 已暂存)", FILE_KEYS),
@@ -49,6 +60,7 @@ def all_sections() -> list[tuple[str, list[tuple[str, str]]]]:
 
 
 # compact subset shown in the status bar (full table lives in the help modal)
+# 状态栏只放最常用的 8 个，完整表在帮助弹窗里（? 键查看）
 STATUS_BAR_KEYS = [
     ("Tab", "切换"),
     ("Space", "暂存"),

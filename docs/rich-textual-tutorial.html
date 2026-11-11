@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rich + Textual 新手教程 · GitNow</title>
+<style>
+:root{
+  --bg:#0d1117; --surface:#151c28; --surface2:#0f1420; --panel:#161d2b;
+  --border:#1f2630; --border-lit:#2a3346;
+  --ink:#c9d1d9; --ink-dim:#8b98b5; --ink-faint:#565f89;
+  --blue:#7aa2f7; --green:#9ece6a; --orange:#e0af68; --cyan:#7dcfff; --red:#f7768e;
+  --code-bg:#10141d;
+  --mono:"Cascadia Code","JetBrains Mono",Consolas,"Courier New",monospace;
+  --sans:"Segoe UI","Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.75;text-wrap:pretty}
+
+/* ---- layout ---- */
+.wrap{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1240px;margin:0 auto;gap:0}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;padding:36px 20px 40px 28px;border-right:1px solid var(--border)}
+main{padding:44px 56px 120px;min-width:0}
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+  main{padding:32px 20px 80px}
+}
+
+/* ---- sidebar ---- */
+.brand{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.5px}
+.brand b{color:var(--orange)}
+.brand-sub{font-size:12px;color:var(--ink-faint);margin:4px 0 26px;font-family:var(--mono)}
+nav a{display:block;padding:6px 12px;margin:1px 0;border-radius:6px;color:var(--ink-dim);text-decoration:none;font-size:13.5px;border-left:2px solid transparent}
+nav a:hover{color:var(--ink);background:var(--surface)}
+nav a .n{font-family:var(--mono);color:var(--ink-faint);margin-right:8px;font-size:12px}
+nav a.sub{padding-left:30px;font-size:12.5px}
+.foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--ink-faint);line-height:1.9}
+.foot a{color:var(--ink-faint)}
+
+/* ---- typography ---- */
+h1{font-size:30px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:6px}
+h1 code{font-size:26px}
+.lede{color:var(--ink-dim);font-size:15.5px;margin-bottom:36px;max-width:640px}
+h2{font-size:21px;font-weight:700;margin:56px 0 16px;padding-top:20px;border-top:1px solid var(--border);letter-spacing:-.2px}
+h2 .no{font-family:var(--mono);font-size:13px;color:var(--orange);margin-right:10px;font-weight:600}
+h3{font-size:15.5px;font-weight:600;margin:30px 0 10px;color:var(--ink)}
+p{margin:12px 0;color:var(--ink);max-width:70ch}
+p.dim,li.dim{color:var(--ink-dim);font-size:14.5px}
+a{color:var(--blue)}
+strong{color:#e6edf3;font-weight:600}
+ul,ol{margin:12px 0 12px 22px;max-width:70ch}
+li{margin:5px 0}
+
+/* ---- inline code ---- */
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1.5px 6px;color:var(--cyan);white-space:nowrap}
+p code,li code,td code{overflow-wrap:anywhere}
+
+/* ---- code blocks ---- */
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;margin:16px 0;overflow-x:auto;position:relative}
+pre code{display:block;background:none;border:0;padding:16px 18px;font-size:13px;line-height:1.7;color:var(--ink);white-space:pre;overflow-wrap:normal}
+.cap{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);margin:-10px 0 16px;padding-left:4px}
+/* token colors */
+.k{color:var(--red)}   /* keyword */
+.s{color:var(--green)} /* string */
+.c{color:var(--ink-faint);font-style:italic} /* comment */
+.f{color:var(--blue)}  /* func/class */
+.n{color:var(--orange)}/* number/const */
+.d{color:var(--cyan)}  /* decorator/def */
+
+/* ---- tables ---- */
+table{border-collapse:collapse;width:100%;margin:18px 0;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--ink-dim);font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;padding:8px 14px;border-bottom:1px solid var(--border-lit)}
+td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap;font-family:var(--mono);font-size:13px}
+
+/* ---- callouts ---- */
+.note{background:var(--panel);border:1px solid var(--border-lit);border-radius:10px;padding:14px 18px;margin:18px 0;max-width:70ch;font-size:14.5px}
+.note b{color:var(--orange)}
+
+/* ---- keyboard keys ---- */
+kbd{font-family:var(--mono);font-size:.82em;background:var(--surface);border:1px solid var(--border-lit);border-bottom-width:2px;border-radius:5px;padding:1px 7px;color:var(--ink)}
+
+/* ---- file tree ---- */
+.tree{font-family:var(--mono);font-size:13px;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0;line-height:1.85;color:var(--ink-dim);overflow-x:auto}
+.tree .f{color:var(--ink)} .tree .dir{color:var(--cyan);font-weight:600} .tree .cm{color:var(--ink-faint)}
+
+/* ---- practice list ---- */
+.ex{counter-reset:ex;margin:14px 0}
+.ex li{counter-increment:ex;list-style:none;margin:10px 0;padding-left:40px;position:relative;color:var(--ink)}
+.ex li::before{content:counter(ex);position:absolute;left:0;top:3px;width:26px;height:26px;border-radius:7px;background:var(--surface);border:1px solid var(--border-lit);color:var(--orange);font-family:var(--mono);font-size:12.5px;display:flex;align-items:center;justify-content:center}
+.ex li .t{font-weight:600;color:#e6edf3}
+.ex li .d{display:block;color:var(--ink-dim);font-size:14px}
+
+/* ---- diff demo ---- */
+.diff-demo{font-family:var(--mono);font-size:13px;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin:16px 0;line-height:1.7;overflow-x:auto}
+.diff-demo .add{color:#b5e890;background:rgba(158,206,106,.08);display:block}
+.diff-demo .del{color:var(--red);background:rgba(247,118,142,.08);display:block}
+.diff-demo .hunk{color:var(--blue);display:block}
+.diff-demo .meta{color:var(--ink-faint);display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<aside>
+  <div class="brand">Git<b>Now</b> · 教程</div>
+  <div class="brand-sub">rich + textual</div>
+  <nav>
+    <a href="#s1"><span class="n">01</span>两个库的关系</a>
+    <a href="#s2"><span class="n">02</span>Rich 基础：Text 与样式</a>
+    <a href="#s3"><span class="n">03</span>Textual 核心</a>
+    <a href="#s4"><span class="n">04</span>异步与后台线程</a>
+    <a href="#s5"><span class="n">05</span>TCSS：Textual 的 CSS</a>
+    <a href="#s6"><span class="n">06</span>动手：跑起来 + 改一点</a>
+    <a href="#s7"><span class="n">07</span>速查表与文件导航</a>
+  </nav>
+  <div class="foot">
+    本页是 <code>docs/rich-textual-tutorial.md</code> 的网页版。<br>
+    Rich: <a href="https://rich.readthedocs.io/">rich.readthedocs.io</a><br>
+    Textual: <a href="https://textual.textualize.io/">textual.textualize.io</a>
+  </div>
+</aside>
+
+<main>
+
+<h1>Rich + Textual 新手教程</h1>
+<p class="lede">用 GitNow 项目本身当教材，从零理解 Rich（终端富文本渲染）和 Textual（基于 Rich 的 TUI 框架）。读完你应该能看懂 <code>gitnow/</code> 里每个文件在做什么，并动手做小改动。</p>
+
+<!-- 01 -->
+<h2 id="s1"><span class="no">01</span>两个库的关系</h2>
+<p>一句话：<strong>Rich 负责画</strong>（颜色、对齐、样式化的文本），<strong>Textual 负责管</strong>（布局、事件、按键、焦点、异步）。</p>
+<p>在 GitNow 里：</p>
+<table>
+  <tr><th>层</th><th>文件</th><th>干什么</th></tr>
+  <tr><td>Rich</td><td style="font-family:var(--sans)">gitnow/theme.py</td><td>集中定义颜色常量</td></tr>
+  <tr><td>Rich</td><td style="font-family:var(--sans)">panels/tree.py · viewer.py</td><td>用 <code>Text</code> 拼出带颜色的行</td></tr>
+  <tr><td>Textual</td><td style="font-family:var(--sans)">gitnow/app.py</td><td><code>App</code> 子类：布局、按键绑定、后台任务</td></tr>
+  <tr><td>Textual</td><td style="font-family:var(--sans)">panels/*.py</td><td>自定义 Widget（面板、列表、弹窗）</td></tr>
+  <tr><td>Textual</td><td style="font-family:var(--sans)">gitnow.tcss</td><td>用 CSS 描述布局和配色</td></tr>
+</table>
+
+<!-- 02 -->
+<h2 id="s2"><span class="no">02</span>Rich 基础：Text 与样式</h2>
+<p>Rich 里最常用的对象是 <code>Text</code>——一段可以分段上色的字符串。</p>
+
+<h3>2.1 最小例子</h3>
+<pre><code><span class="k">from</span> rich.text <span class="k">import</span> Text
+
+t = <span class="f">Text</span>(<span class="s">"hello "</span>)
+t.<span class="f">append</span>(<span class="s">"world"</span>, style=<span class="s">"bold red"</span>)   <span class="c"># 后半段红色加粗</span>
+<span class="f">print</span>(t)</code></pre>
+<p class="dim"><code>style</code> 是一个"样式字符串"，语法是 <code>粗体 颜色 on 背景色</code> 的组合，例如：<code>"bold"</code> 加粗 · <code>"red"</code> / <code>"#ff0000"</code> 前景色（支持 256 色名和 hex）· <code>"on blue"</code> 设置背景色 · <code>"bold #7aa2f7"</code> 可以组合。</p>
+
+<h3>2.2 GitNow 的用法</h3>
+<p><code>theme.py</code> 把所有颜色收拢成常量（Tokyo Night 配色）：</p>
+<pre><code>ACCENT_BLUE  = <span class="s">"#7aa2f7"</span>
+ACCENT_GREEN = <span class="s">"#9ece6a"</span>
+...</code></pre>
+<p><code>panels/tree.py:105</code> 的 <code>_label</code> 是典型例子——给文件树里的每个文件名上色：</p>
+<pre><code><span class="k">def</span> <span class="d">_label</span>(<span class="k">self</span>, name: <span class="f">str</span>, entry: FileEntry | <span class="k">None</span>) -&gt; Text:
+    <span class="k">if</span> entry <span class="k">is</span> <span class="k">None</span>:
+        <span class="k">return</span> <span class="f">Text</span>(name, style=theme.FG_DIM)          <span class="c"># 无改动 → 暗灰</span>
+    letter = entry.wt_letter                            <span class="c"># git 状态字母 M/A/?/D</span>
+    color = theme.WT_COLORS.<span class="f">get</span>(letter, theme.FG)
+    <span class="k">return</span> Text.<span class="f">assemble</span>((<span class="s">f"{letter} "</span>, <span class="s">f"bold {color}"</span>), (name, theme.FG))</code></pre>
+<p class="cap">panels/tree.py — 文件树里的每一行都由 Text 分段上色</p>
+<p><code>Text.assemble(...)</code> 接收若干 <code>(文本, 样式)</code> 元组，一次性拼出多段不同颜色的 Text，比逐个 <code>append</code> 简洁。</p>
+<p><code>panels/viewer.py:115</code> 的 <code>_log_line</code> 同理，把 git log 的一行渲染成：橙色的短 SHA + 灰色日期 + 青色作者 + 绿色分支 + 普通正文。</p>
+<div class="note"><b>记住这个模式</b>：Textual 的任何 widget 都能接受 Text 或带 markup 的字符串，所以"让数据好看"这件事永远在 Rich 层完成。</div>
+
+<h3>2.3 Rich Console（脱离 TUI 也能用）</h3>
+<p><code>__main__.py:13</code> 用的 <code>print()</code> 其实就是普通 print。如果想在命令行打印彩色错误，可以：</p>
+<pre><code><span class="k">from</span> rich.console <span class="k">import</span> Console
+console = <span class="f">Console</span>()
+console.<span class="f">print</span>(<span class="s">"[bold red]错误[/bold red]</span><span class="s">: 不是 git 仓库"</span>)</code></pre>
+<p><code>[bold red]...[/bold red]</code> 是 Rich 的 markup 写法，与 <code>Text</code> 对象二选一。GitNow 的 <code>notify(..., markup=False)</code> 传 False 就是故意关掉 markup 解析，防止 git 报错信息里的 <code>[xxx]</code> 被误当成标签。</p>
+
+<!-- 03 -->
+<h2 id="s3"><span class="no">03</span>Textual 核心：App、Widget、消息</h2>
+
+<h3>3.1 一个 App 的三要素</h3>
+<p>看 <code>app.py:24</code> 的 <code>GitNowApp</code>，一个 Textual 应用只需要：</p>
+<pre><code><span class="k">class</span> <span class="f">GitNowApp</span>(App):
+    TITLE = <span class="s">"GitNow"</span>
+    CSS_PATH = <span class="s">"gitnow.tcss"</span>        <span class="c"># 1. 样式文件</span>
+
+    BINDINGS = [                    <span class="c"># 2. 全局按键</span>
+        <span class="f">Binding</span>(<span class="s">"q"</span>, <span class="s">"quit"</span>, <span class="s">"退出"</span>),
+        <span class="f">Binding</span>(<span class="s">"r"</span>, <span class="s">"refresh"</span>, <span class="s">"刷新"</span>),
+        ...
+    ]
+
+    <span class="k">def</span> <span class="d">compose</span>(<span class="k">self</span>) -&gt; ComposeResult:   <span class="c"># 3. 布局：声明有哪些 widget</span>
+        <span class="k">with</span> <span class="f">Horizontal</span>(id=<span class="s">"main"</span>):
+            <span class="k">with</span> <span class="f">Vertical</span>(id=<span class="s">"left"</span>):
+                <span class="k">yield</span> FileTreePanel(id=<span class="s">"tree-panel"</span>)
+                <span class="k">yield</span> StagedPanel(id=<span class="s">"staged-panel"</span>)
+            <span class="k">yield</span> RightViewer(id=<span class="s">"viewer"</span>)
+        <span class="k">yield</span> StatusBar(id=<span class="s">"statusbar"</span>)</code></pre>
+<p class="cap">app.py — GitNow 的整体布局：左侧两块面板 + 右侧查看器 + 底部状态栏</p>
+<p><code>compose</code> 就像写 HTML：<code>Horizontal</code>/<code>Vertical</code> 是容器（相当于 div），<code>yield</code> 出来的 widget 会被挂载。<code>id="..."</code> 相当于 HTML 的 id，之后可以用 CSS 选择器找到它。</p>
+<p>启动入口在 <code>__main__.py</code>：</p>
+<pre><code>GitNowApp(repo_path=<span class="f">str</span>(path)).<span class="f">run</span>()   <span class="c"># .run() 进入事件循环，阻塞直到退出</span></code></pre>
+
+<h3>3.2 query_one：找到你的 widget</h3>
+<p><code>app.py:65</code> 用 property 封装了查找：</p>
+<pre><code><span class="d">@property</span>
+<span class="k">def</span> <span class="d">tree_panel</span>(<span class="k">self</span>) -&gt; FileTreePanel:
+    <span class="k">return</span> <span class="k">self</span>.<span class="f">query_one</span>(<span class="s">"#tree-panel"</span>, FileTreePanel)</code></pre>
+<p><code>query_one("#id", 类型)</code> 是 Textual 的 DOM 查询，选择器语法和 CSS 一样（<code>#id</code>、<code>.class</code>、<code>WidgetType</code>）。之后代码里 <code>self.tree_panel.rebuild(...)</code> 就很自然。</p>
+
+<h3>3.3 消息（Message）：子组件向父级汇报</h3>
+<p>Textual 的事件模型是<strong>冒泡的消息</strong>。子 widget 遇到事情 → 发一条 Message → 沿着组件树向上传 → 父级用 <code>@on(...)</code> 接住。</p>
+<p>GitNow 里最典型的链路：<strong>光标在文件树上移动时，右侧要显示 diff</strong>。</p>
+<p>第 1 步，定义消息（<code>panels/tree.py:16</code>）：</p>
+<pre><code><span class="k">class</span> <span class="f">FileHighlighted</span>(Message):
+    <span class="k">def</span> <span class="d">__init__</span>(<span class="k">self</span>, panel: <span class="f">str</span>, path: <span class="f">str</span>) -&gt; <span class="k">None</span>:
+        <span class="k">self</span>.panel = panel
+        <span class="k">self</span>.path = path
+        <span class="f">super</span>().__init__()</code></pre>
+<p>第 2 步，widget 内部检测到事件后发送（<code>panels/tree.py:114</code>）：</p>
+<pre><code><span class="d">@on</span>(Tree.NodeHighlighted)
+<span class="k">def</span> <span class="d">_node_highlighted</span>(<span class="k">self</span>, event):
+    ...
+    <span class="k">self</span>.<span class="f">post_message</span>(FileHighlighted(<span class="s">"tree"</span>, data[<span class="s">"path"</span>]))</code></pre>
+<p>第 3 步，App 层接收（<code>app.py:163</code>）：</p>
+<pre><code><span class="d">@on</span>(FileHighlighted)
+<span class="k">def</span> <span class="d">on_file_highlighted</span>(<span class="k">self</span>, event: FileHighlighted) -&gt; <span class="k">None</span>:
+    <span class="k">self</span>.<span class="f">set_selection</span>(event.panel, event.path)   <span class="c"># → 触发右侧 diff 加载</span></code></pre>
+<p>这个"子组件发消息、App 统一调度"是 Textual 的核心设计。GitNow 里还有三条自定义消息，都在 <code>panels/viewer.py:19-30</code>：</p>
+<ul>
+  <li><code>CommitRequested</code>：用户在 log 里按 <kbd>Enter</kbd> → App 去拉取该 commit 的详情</li>
+  <li><code>BackRequested</code>：按 <kbd>Esc</kbd> → App 退回 log 视图</li>
+  <li><code>LogNearEnd</code>：光标滚到 log 末尾 3 条以内 → App 加载更多（无限滚动）</li>
+</ul>
+<div class="note"><b>注意</b> <code>@on(Tree.NodeHighlighted)</code> 这种写法：Textual 内置 widget 自己也发消息，你用 <code>@on</code> 订阅即可，不用重写它的代码。</div>
+
+<h3>3.4 BINDINGS 与 action_ 方法</h3>
+<p>按键绑定约定：<code>Binding("space", "stage_toggle", ...)</code> 表示按 space 时调用 <code>action_stage_toggle</code> 方法——<strong>action 名自动映射到 <code>action_&lt;名字&gt;</code> 方法</strong>。<code>BINDINGS</code> 可以挂在 App（全局）或某个 widget（仅当它有焦点时）上，GitNow 两层都用了：<kbd>q</kbd> / <kbd>r</kbd> / <kbd>c</kbd> 是全局的，<kbd>space</kbd> / <kbd>d</kbd> / <kbd>e</kbd> 只在文件树上有焦点时生效。</p>
+<p>widget 里通过 <code>self.app.xxx</code> 访问 App 实例（<code>panels/tree.py:137</code> 的 <code>self.app.stage_toggle(...)</code>），这是子 widget 调用业务逻辑的标准做法。</p>
+
+<h3>3.5 弹窗：push_screen + 回调</h3>
+<p><code>app.py:330</code> 提交时弹输入框：</p>
+<pre><code><span class="k">self</span>.<span class="f">push_screen</span>(CommitModal(<span class="f">len</span>(st.index_entries)), <span class="k">self</span>._commit_callback)</code></pre>
+<p><code>ModalScreen</code> 子类（见 <code>panels/modals.py</code>）盖在主界面之上；第二个参数是回调，当 screen 以 <code>self.dismiss(结果)</code> 关闭时，结果传给回调。<code>_commit_callback</code> 收到 <code>None</code> 表示用户取消，收到字符串就是 commit message。</p>
+
+<!-- 04 -->
+<h2 id="s4"><span class="no">04</span>异步与后台线程：@work</h2>
+<p>Textual 是 asyncio 应用，<strong>主线程里绝不能做慢操作</strong>（比如调 git 子进程），否则界面卡死。Textual 提供了 <code>@work</code> 装饰器把方法丢进后台执行。</p>
+<p><code>app.py:104</code>：</p>
+<pre><code><span class="d">@work</span>(thread=<span class="k">True</span>, group=<span class="s">"refresh"</span>, exclusive=<span class="k">True</span>)
+<span class="k">def</span> <span class="d">refresh_all</span>(<span class="k">self</span>) -&gt; <span class="k">None</span>:
+    st = gitbackend.<span class="f">status</span>(<span class="k">self</span>.repo_path)          <span class="c"># 子进程调 git，慢</span>
+    ...
+    <span class="k">self</span>.<span class="f">call_from_thread</span>(<span class="k">self</span>._apply_status, st, all_files)   <span class="c"># 回主线程</span></code></pre>
+<p>三个参数的含义：</p>
+<ul>
+  <li><code>thread=True</code>：放到线程池跑（不写则是协程）</li>
+  <li><code>group="refresh"</code>：任务分组</li>
+  <li><code>exclusive=True</code>：同组旧任务没跑完时，新调用会取消旧的——防止连续按 <kbd>r</kbd> 堆积一堆重复刷新</li>
+</ul>
+<div class="note"><b>关键规则</b>：后台线程里不能直接改 UI，要用 <code>self.call_from_thread(回调, 参数)</code> 切回主线程再更新界面。GitNow 所有 <code>@work(thread=True)</code> 方法都严格遵守这一点。</div>
+<p><code>on_mount</code> 里还有个定时器（<code>app.py:95</code>）：</p>
+<pre><code><span class="k">self</span>.<span class="f">set_interval</span>(<span class="n">3.0</span>, <span class="k">self</span>._auto_refresh)   <span class="c"># 每 3 秒自动刷新一次状态</span></code></pre>
+<p><code>set_interval</code> 是 Textual 的周期任务，配合 <code>_busy</code> 标志避免和手动刷新/弹窗冲突。</p>
+
+<!-- 05 -->
+<h2 id="s5"><span class="no">05</span>TCSS：Textual 的 CSS</h2>
+<p><code>gitnow.tcss</code> 决定布局和配色，语法接近 Web CSS：</p>
+<pre><code>#main { height: <span class="n">1fr</span>; }              <span class="c">/* fr = 剩余空间的等分单位 */</span>
+#left { width: <span class="n">40%</span>; min-width: <span class="n">34</span>; }
+
+FileTreePanel {
+  height: <span class="n">62%</span>;
+  background: <span class="s">#151c28</span>;
+  border: round <span class="s">#151c28</span>;            <span class="c">/* 颜色和背景相同 = 看不见的边框 */</span>
+}
+FileTreePanel:focus { border: round <span class="s">#7aa2f7</span>; }   <span class="c">/* 有焦点时才显示边框 */</span></code></pre>
+<p>几个 GitNow 用到的要点：</p>
+<ul>
+  <li><code>1fr</code>：占剩余高度的等份。<code>#main</code> 占满除状态栏外的全部，左右面板再分它</li>
+  <li><code>dock: bottom</code>：状态栏停靠底部（<code>StatusBar</code> 那段）</li>
+  <li>类型选择器直接写 widget 类名（<code>FileTreePanel</code>），id 选择器写 <code>#名字</code></li>
+  <li><strong>小技巧</strong>：GitNow 让未聚焦面板的边框颜色 == 背景色，这样面板切换焦点时只有边框变色、布局纹丝不动（见文件头注释）</li>
+</ul>
+<p>改样式不用重启 Python 逻辑，<code>textual run --dev</code> 还支持热重载（见下节）。</p>
+
+<!-- 06 -->
+<h2 id="s6"><span class="no">06</span>动手：跑起来 + 改一点东西</h2>
+
+<h3>6.1 运行</h3>
+<pre><code><span class="c"># 开发模式（带控制台看日志/报错，强烈推荐）</span>
+pip install textual-dev
+textual console            <span class="c"># 先开控制台</span>
+textual run --dev python -m gitnow          <span class="c"># 另一个终端</span>
+
+<span class="c"># 或者直接跑</span>
+python -m gitnow &lt;仓库路径&gt;</code></pre>
+
+<h3>6.2 练习清单（由易到难）</h3>
+<ol class="ex">
+  <li><span class="t">改颜色</span><span class="d">在 <code>theme.py</code> 里把 <code>ACCENT_ORANGE</code> 换成别的颜色，重启看 log 列表变化。</span></li>
+  <li><span class="t">加一个按键</span><span class="d">模仿 <kbd>r</kbd> → <code>refresh</code>，在 <code>app.py</code> 的 <code>BINDINGS</code> 里加 <code>Binding("R", "refresh_all_force", ...)</code>，实现"强制刷新"并 <code>notify("已强制刷新")</code>。</span></li>
+  <li><span class="t">改状态栏</span><span class="d">在 <code>panels/statusbar.py</code> 的内容里加上当前时间（提示：<code>set_interval(1.0, ...)</code>）。</span></li>
+  <li><span class="t">新消息练习</span><span class="d">给 <code>StagedPanel</code> 加双击/Enter 触发的 <code>FileOpened</code> 消息，在 <code>app.py</code> 里接收并 <code>notify</code> 路径。</span></li>
+</ol>
+
+<h3>6.3 调试技巧</h3>
+<ul>
+  <li>所有 <code>print()</code> 输出会被 TUI 吞掉——用 <code>textual console</code> 配合 <code>self.log(...)</code> 或 <code>from textual import log</code> 查看</li>
+  <li><code>self.notify("消息")</code> 是右下角 toast，适合临时验证代码跑没跑到</li>
+  <li>布局问题先在 tcss 里加 <code>border: round red;</code> 把可疑容器框出来看</li>
+</ul>
+
+<!-- 07 -->
+<h2 id="s7"><span class="no">07</span>速查表与文件导航</h2>
+<table>
+  <tr><th>概念</th><th>Rich</th><th>Textual</th></tr>
+  <tr><td style="font-family:var(--sans)">定位</td><td>富文本渲染</td><td>终端应用框架（内部用 Rich 渲染）</td></tr>
+  <tr><td style="font-family:var(--sans)">核心对象</td><td><code>Text</code> / <code>Console</code></td><td><code>App</code> / <code>Widget</code> / <code>Message</code></td></tr>
+  <tr><td style="font-family:var(--sans)">上色</td><td><code>Text.append(s, style="bold red")</code></td><td>widget 接受 Text 或 markup 字符串</td></tr>
+  <tr><td style="font-family:var(--sans)">布局</td><td>—</td><td>容器 widget + TCSS</td></tr>
+  <tr><td style="font-family:var(--sans)">事件</td><td>—</td><td><code>post_message</code> / <code>@on</code> / <code>on_&lt;事件&gt;</code></td></tr>
+  <tr><td style="font-family:var(--sans)">按键</td><td>—</td><td><code>BINDINGS</code> + <code>action_xxx()</code></td></tr>
+  <tr><td style="font-family:var(--sans)">慢操作</td><td>—</td><td><code>@work(thread=True)</code> + <code>call_from_thread</code></td></tr>
+  <tr><td style="font-family:var(--sans)">弹窗</td><td>—</td><td><code>push_screen(screen, callback)</code> / <code>dismiss</code></td></tr>
+</table>
+
+<h3>GitNow 文件导航</h3>
+<div class="tree">gitnow/
+├── <span class="f">__main__.py</span>      <span class="cm">入口：检查仓库 → GitNowApp().run()</span>
+├── <span class="f">app.py</span>           <span class="cm">App 主类：布局、全局按键、消息调度、后台任务</span>
+├── <span class="f">gitbackend.py</span>    <span class="cm">纯 git 命令封装（不含任何 UI）</span>
+├── <span class="f">models.py</span>        <span class="cm">数据类：RepoStatus / FileEntry / LogEntry</span>
+├── <span class="f">theme.py</span>         <span class="cm">Rich 颜色常量</span>
+├── <span class="f">gitnow.tcss</span>      <span class="cm">Textual 样式</span>
+└── <span class="dir">panels/</span>
+    ├── <span class="f">tree.py</span>      <span class="cm">左上：文件树（Tree widget + 自定义消息）</span>
+    ├── <span class="f">staged.py</span>    <span class="cm">左下：已暂存列表（OptionList）</span>
+    ├── <span class="f">viewer.py</span>    <span class="cm">右侧：log / diff / commit（OptionList + Static）</span>
+    ├── <span class="f">statusbar.py</span> <span class="cm">底部状态栏</span>
+    └── <span class="f">modals.py</span>    <span class="cm">弹窗（提交 / 确认 / 帮助，ModalScreen）</span></div>
+
+</main>
+</div>
+</body>
+</html>

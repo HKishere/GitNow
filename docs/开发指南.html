@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitNow 设计与二次开发指南</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#151c28; --code:#10141f; --fg:#c9d4ea; --dim:#7d8aa5;
+    --blue:#7aa2f7; --green:#9ece6a; --orange:#e0af68; --red:#f7768e; --cyan:#7dcfff; --purple:#bb9af7;
+    --line:#232d40;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; padding:0 0 80px; background:var(--bg); color:var(--fg);
+       font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;
+       font-size:15px; line-height:1.75;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 24px;}
+  header{border-bottom:1px solid var(--line); padding:36px 0 20px; margin-bottom:8px;}
+  h1{font-size:26px; margin:0 0 6px; color:#e8eefb;}
+  .meta{color:var(--dim); font-size:13px;}
+  h2{font-size:21px; color:var(--blue); border-left:4px solid var(--blue);
+     padding-left:12px; margin:48px 0 14px;}
+  h3{font-size:17px; color:var(--cyan); margin:30px 0 10px;}
+  h4{font-size:15px; color:var(--green); margin:22px 0 8px;}
+  p{margin:10px 0;}
+  a{color:var(--blue); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  code{background:#1a2333; color:var(--orange); padding:1px 6px; border-radius:4px;
+       font-family:Consolas,"Courier New",monospace; font-size:13px;}
+  pre.code{background:var(--code); border:1px solid var(--line); border-left:3px solid var(--blue);
+       border-radius:6px; padding:14px 16px; overflow-x:auto; line-height:1.55;
+       font-family:Consolas,"Courier New",monospace; font-size:13px; color:#b8c4dd;}
+  pre.flow{background:#0a0e15; border:1px dashed #2c3a55; border-radius:6px; padding:14px 16px;
+       overflow-x:auto; font-family:Consolas,monospace; font-size:12.5px; color:#9fb3d8; line-height:1.5;}
+  .toc{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px 22px;}
+  .toc ol{margin:6px 0; padding-left:22px;}
+  .note{background:#12211a; border:1px solid #24402f; border-radius:6px; padding:10px 16px; margin:14px 0;}
+  .note::before{content:"💡 新手提示  "; color:var(--green); font-weight:bold;}
+  .warn{background:#2a1418; border:1px solid #4a2430; border-radius:6px; padding:10px 16px; margin:14px 0;}
+  .warn::before{content:"⚠️ 踩坑记录  "; color:var(--red); font-weight:bold;}
+  table.t{border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px;}
+  table.t th{background:#1a2333; color:var(--cyan); text-align:left; padding:7px 10px; border:1px solid var(--line);}
+  table.t td{padding:6px 10px; border:1px solid var(--line); vertical-align:top;}
+  table.t tr:nth-child(even){background:#10151f;}
+  .file{display:inline-block; background:#1a2333; border:1px solid #2c3a55; color:var(--cyan);
+        border-radius:4px; padding:0 8px; font-family:Consolas,monospace; font-size:12.5px;}
+  .kbd{display:inline-block; background:#232f47; color:var(--blue); border-radius:4px;
+       padding:0 7px; font-family:Consolas,monospace; font-size:12.5px; border:1px solid #34446b;}
+  .step{color:var(--orange); font-weight:bold;}
+  /* 代码高亮 */
+  .k{color:var(--purple);}          /* 关键字 */
+  .s{color:var(--green);}           /* 字符串 */
+  .c{color:#5b6b8c; font-style:italic;} /* 注释 */
+  .d{color:var(--orange);}          /* 装饰器 */
+  .n{color:var(--cyan);}            /* 数字/常量 */
+  .f{color:#82aaff;}                /* 函数名 */
+  ul{margin:8px 0; padding-left:24px;}
+  li{margin:4px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>GitNow 设计与二次开发指南</h1>
+  <div class="meta">
+    适用版本 v0.1.0 · 技术栈 Python 3.14 + Textual 8.2.8 · 项目位置
+    <code>C:\Users\Administrator\Documents\Code\GitNow</code><br>
+    阅读对象：第一次接触 Textual / 想动手改这个工具的开发者。按顺序读完第 4、5 章即可上手大部分修改。
+  </div>
+</header>
+
+<nav class="toc">
+  <b>目录</b>
+  <ol>
+    <li><a href="#s1">软件总览与文件地图</a></li>
+    <li><a href="#s2">整体设计逻辑（三层架构 + 数据流）</a></li>
+    <li><a href="#s3">关键流程的代码调用链</a></li>
+    <li><a href="#s4">Textual 新手课（本项目用到的 10 个概念）</a></li>
+    <li><a href="#s5">逐文件精读</a></li>
+    <li><a href="#s6">修改任务手册（照着做就能改）</a></li>
+    <li><a href="#s7">调试与测试</a></li>
+    <li><a href="#s8">打包成 exe</a></li>
+    <li><a href="#s9">附录：键位表 / git 命令映射 / Textual API 速查 / 报错对照</a></li>
+  </ol>
+</nav>
+
+<!-- ================= 1 ================= -->
+<h2 id="s1">1. 软件总览与文件地图</h2>
+
+<p>GitNow 是一个终端里的 Git 面板：左边看文件改动并暂存，右边看 diff 和历史，按键完成提交 / push / pull。
+所有 Git 操作都是<b>直接调用 git 命令行</b>（子进程），不依赖任何 Git 库。</p>
+
+<pre class="flow">
++------------------------+--------------------------------+
+| 文件树 (左上)            |  右侧视图（三态）               |
+|  改动+新增文件, t 切全部  |   选中文件  -> 该文件 diff      |
+|  目录折叠, 状态色标       |   无选中    -> git log 列表     |
++------------------------+   log 按 Enter -> 提交详情      |
+| 已暂存 staged (左下)     |                               |
++------------------------+-------------------------------+
+| 状态栏: 分支 | ahead/behind | 计数 | 键位条                |
++-------------------------------------------------------+
+</pre>
+
+<p>外观规则（gitlogue 风格）：每个面板是一块<b>暗色色块</b>，面板之间不画线框；
+<b>只有持有焦点的面板</b>才出现一圈彩色圆角边框。实现技巧见 <a href="#css">4.3 节</a>。</p>
+
+<h3>1.1 文件地图</h3>
+<pre class="flow">
+GitNow/
+├─ build.bat              双击重新打包 exe
+├─ gitnow_exe.py          PyInstaller 打包入口（一行包装，见第 8 章）
+├─ pyproject.toml         包定义与依赖
+├─ gitnow/                ← 主包，所有逻辑都在这
+│  ├─ __main__.py         程序入口（main 函数）
+│  ├─ app.py              App 总控：布局、焦点、所有按键动作、后台线程
+│  ├─ gitbackend.py       【唯一】和 git 命令打交道的地方
+│  ├─ models.py           数据结构：FileEntry / LogEntry / RepoStatus
+│  ├─ keys.py             键位表（状态栏 + 帮助面板共用）
+│  ├─ theme.py            文字颜色常量（状态色、diff 配色）
+│  ├─ gitnow.tcss         界面样式（色块底色、边框、布局比例）
+│  └─ panels/             五个界面部件
+│     ├─ tree.py          左上：文件树
+│     ├─ staged.py        左下：已暂存列表
+│     ├─ viewer.py        右侧：log 列表 / diff / 提交详情
+│     ├─ statusbar.py     底部状态栏
+│     └─ modals.py        三个弹窗：提交 / 确认 / 帮助
+├─ tests/smoke_test.py    无头冒烟测试（一条命令验证全流程）
+└─ dist/GitNow.exe        打包产物
+</pre>
+
+<h3>1.2 "想改 X，动哪个文件" 对照表</h3>
+<table class="t">
+  <tr><th>想改什么</th><th>动哪个文件</th><th>说明</th></tr>
+  <tr><td>面板底色 / 边框颜色 / 布局比例</td><td><span class="file">gitnow/gitnow.tcss</span></td><td>纯样式，改完直接重跑就能看到</td></tr>
+  <tr><td>文件状态字母的颜色（M/A/??）</td><td><span class="file">gitnow/theme.py</span></td><td>WT_COLORS（树）/ INDEX_COLORS（暂存）</td></tr>
+  <tr><td>diff 增删行的配色</td><td><span class="file">gitnow/theme.py</span></td><td>DIFF_STYLES 字典</td></tr>
+  <tr><td>某个按键做什么</td><td>对应 panel 的 <code>BINDINGS</code> 或 <span class="file">app.py</span> 的 <code>BINDINGS</code></td><td>见 4.4 节</td></tr>
+  <tr><td>底部键位条 / 帮助面板内容</td><td><span class="file">gitnow/keys.py</span></td><td>STATUS_BAR_KEYS / 各 KEY 表</td></tr>
+  <tr><td>状态栏显示什么</td><td><span class="file">gitnow/panels/statusbar.py</span></td><td>update_status 方法</td></tr>
+  <tr><td>log 每行显示什么</td><td><span class="file">gitnow/panels/viewer.py</span></td><td>_log_line 方法</td></tr>
+  <tr><td>git 命令本身 / 输出解析</td><td><span class="file">gitnow/gitbackend.py</span></td><td>全项目唯一 git 出口</td></tr>
+  <tr><td>界面结构（加面板、改布局）</td><td><span class="file">gitnow/app.py</span> 的 compose + tcss</td><td>见 6.4 节</td></tr>
+  <tr><td>弹窗（提交/确认/帮助）</td><td><span class="file">gitnow/panels/modals.py</span></td><td></td></tr>
+  <tr><td>默认树模式 / 自动刷新间隔</td><td><span class="file">gitnow/app.py</span></td><td>__init__ 里 tree_mode、on_mount 里 set_interval(3.0, ...)</td></tr>
+</table>
+
+<!-- ================= 2 ================= -->
+<h2 id="s2">2. 整体设计逻辑</h2>
+
+<h3>2.1 三层架构</h3>
+<pre class="flow">
+┌─────────────────────────────────────────────────────┐
+│ UI 层   app.py + panels/*                            │
+│         只做三件事：显示数据、接按键、发消息            │
+├─────────────────────────────────────────────────────┤
+│ 数据层  models.py（纯数据，无行为）                    │
+│         FileEntry(xy 状态码) LogEntry RepoStatus      │
+├─────────────────────────────────────────────────────┤
+│ git 层  gitbackend.py（唯一出口）                     │
+│         每个函数 = 启动一个 git 子进程 + 解析输出       │
+└─────────────────────────────────────────────────────┘
+规则：UI 层永远不直接 subprocess，git 层永远不 import UI 层。
+     想换 UI 框架，只重写 UI 层；想加 git 功能，只动 git 层 + 一个按键。
+</pre>
+
+<h3>2.2 三个核心设计，理解了它们就读懂了 app.py</h3>
+
+<p><b>① 单一刷新入口。</b>任何会改变仓库状态的操作（暂存、提交、push…）结束后都走
+<code>refresh_all()</code>：它重新执行 <code>git status</code>，重建左边的两个面板，
+并尽量保持你当前选中的文件不变。<b>UI 上你看到的一切列表，都是 status 解析结果的投影</b>——
+面板自己不存状态，所以不会出现"界面和 git 实际状态不一致"。</p>
+
+<p><b>② 选择（selection）驱动右侧。</b>App 里只有一个
+<code>self.selected = (面板名, 路径)</code> 决定右侧显示什么：
+None → 显示 log；有值 → 显示该文件 diff（从哪个面板选的就看哪种 diff）。
+左面板光标一动 → 发消息 → App 更新 selected → 后台取 diff → 回填。</p>
+
+<p><b>③ token 防串台。</b>取 diff 是后台线程，用户光标可能在你取完之前又动了。
+所以发起请求时记一个 token，结果回来先比对 token，不一致就丢弃——
+保证右侧永远是"当前选中"的内容，而不是"最先发出请求"的内容。</p>
+
+<h3>2.3 右侧视图状态机</h3>
+<pre class="flow">
+            ┌─────────────────────────────────────────┐
+            │  viewer.mode:  "log" ⇄ "diff" ⇄ "commit" │
+            └─────────────────────────────────────────┘
+ log ──选中文件──> diff          diff ──Esc/文件消失──> log
+ log ──Enter──> commit           commit ──Esc──> log
+ 位置：log 显示在 LogList(OptionList)，diff/commit 显示在 Static，两者靠 display 切换互斥
+</pre>
+
+<!-- ================= 3 ================= -->
+<h2 id="s3">3. 关键流程的代码调用链</h2>
+<p>下面 6 张图覆盖了程序的全部主干。<b>建议对照 app.py 源码逐行走一遍</b>，行号以当前版本为准。</p>
+
+<h3>3.1 启动流程</h3>
+<pre class="flow">
+gitnow 命令（pyproject.toml 里注册的入口）
+└─ gitnow/__main__.py :: main()
+   ├─ gitbackend.is_repo(path)        git rev-parse --is-inside-work-tree
+   │    └─ 不是仓库 → print 中文报错, return 1
+   ├─ from .app import GitNowApp      # 懒加载：上面的报错路径不必加载 Textual
+   └─ GitNowApp(repo_path).run()      进入 Textual 事件循环
+      └─ App.on_mount() (app.py L87)
+         ├─ 设置三个面板的 border_title（彩色标题）
+         ├─ viewer.show_note("加载中…")
+         ├─ refresh_all()             ← 后台线程拉 git status
+         ├─ load_log()                ← 后台线程拉 git log
+         ├─ set_interval(3.0, _auto_refresh)   每 3 秒自动刷新
+         └─ set_focus(tree_panel)     焦点默认给文件树
+</pre>
+
+<h3>3.2 刷新流程（所有读操作的汇聚点）</h3>
+<pre class="flow">
+refresh_all()  装饰器 @work(thread=True, group="refresh", exclusive=True)
+├─ [后台线程] gitbackend.status(repo)      git status --porcelain=v2 --branch -z -uall
+├─ [后台线程] (仅 all 模式) list_all_files  git ls-files -z --cached --others --exclude-standard
+└─ call_from_thread(_apply_status, st, all_files)   ← 切回 UI 线程才能碰界面
+   _apply_status():
+   ├─ self.status = st
+   ├─ status_bar.update_status(st)         分支/箭头/计数
+   ├─ tree_panel.rebuild(st, ..., keep=current_path)   重建树，光标回到原文件
+   ├─ staged_panel.rebuild(st, keep=...)
+   └─ 选中校验：selected 的文件不再有改动?
+        └─ 是 → selected=None, viewer 回退显示 log
+</pre>
+<div class="note">为什么要 call_from_thread？Textual 的界面只能在主（UI）线程里改。
+git 子进程要几百毫秒，直接在按键处理里跑会卡住整个界面，所以放后台线程，
+跑完把"结果"递回 UI 线程去刷新。这是本项目所有 git 调用的固定套路。</div>
+
+<h3>3.3 选中文件 → 右侧显示 diff</h3>
+<pre class="flow">
+用户按 j/k / ↑↓
+└─ Textual 检测到 Tree 光标行变化 → 发出 Tree.NodeHighlighted 事件
+   └─ FileTreePanel._node_highlighted (panels/tree.py)
+      ├─ 记录 self.highlighted_path
+      └─ if self.has_focus: post_message(FileHighlighted("tree", path))
+          │                ← 没焦点的面板不发，防止后台刷新抢走右侧视图
+          └─ 消息沿组件树冒泡 → GitNowApp.@on(FileHighlighted)
+             └─ set_selection(panel, path) (app.py L167)
+                ├─ 和上次相同? → return（去重）
+                ├─ self.selected = (panel, path)
+                ├─ viewer.token = (panel, path)      ← 记 token
+                └─ request_diff()  @work(thread, group="diff", exclusive)
+                   ├─ [线程] 按 entry 状态挑命令：
+                   │    staged 面板来的       → git diff --cached
+                   │    未跟踪文件             → git diff --no-index /dev/null
+                   │    其他                   → git diff（工作区）
+                   └─ call_from_thread(viewer.apply_diff, path, badge, text, token)
+                      └─ viewer: token 不一致 → 丢弃；一致 → 上色渲染
+</pre>
+
+<h3>3.4 按 Space 暂存（所有"写操作"的模板）</h3>
+<pre class="flow">
+FileTreePanel BINDINGS: Binding("space", "stage_toggle")
+└─ action_stage_toggle() → app.stage_toggle("tree", path)
+   └─ 查 status: 有工作区改动 → stage_paths；只有暂存区改动 → unstage_paths
+      └─ _mutate(gitbackend.stage, (paths,), "暂存 N 个文件")   (app.py L296)
+         ├─ _busy += 1，状态栏显示 "…"
+         └─ _run_mutation  @work(thread, group="mutate")
+            ├─ [线程] fn(repo, *args)  →  git add -- :(literal)path
+            │    GitError → 捕获，stderr 存入 error
+            └─ call_from_thread(_mutation_done, desc, detail, error)
+               ├─ _busy -= 1
+               ├─ notify(...)   成功/失败 toast（git stderr 原样展示）
+               ├─ refresh_all() ← 统一刷新
+               └─ load_log()    ← log 可能变了（比如刚提交过）
+</pre>
+<div class="note">想加任何新的"写仓库"操作（stash、ignore…），照 3.4 的模子：
+gitbackend 加一个函数 → app 里 <code>_mutate(gitbackend.xxx, (参数,), "描述")</code> → 面板加按键。
+三步，完事。</div>
+
+<h3>3.5 提交流程（弹窗怎么接值）</h3>
+<pre class="flow">
+c → App.action_commit
+├─ staged 为空 → notify 警告, return
+└─ push_screen(CommitModal(n), callback=_commit_callback)
+   CommitModal(panels/modals.py):
+   ├─ compose: 标题 + TextArea(输入框) + 提示行
+   ├─ on_mount: TextArea.focus()
+   └─ Ctrl+S → action_do_commit
+      ├─ message 为空 → notify 警告, return
+      └─ self.dismiss(message)      ← 关闭弹窗并把值传出去
+         └─ callback 收到 message → _mutate(gitbackend.commit, (message,), "提交")
+            （Esc 则 dismiss(None)，callback 里直接忽略）
+</pre>
+
+<h3>3.6 push / pull</h3>
+<pre class="flow">
+P → action_push ─ 没提交过? notify 警告 ─ _mutate(gitbackend.push, (分支名,), "push")
+p → action_pull ─────────────────────── _mutate(gitbackend.pull, (), "pull")
+gitbackend.push(): 先 git push；失败且 stderr 含 "no upstream" 且有 origin
+                   → 自动 git push --set-upstream origin 分支
+gitbackend.pull(): git pull --ff-only（分叉时拒绝，报错进 toast，不做静默合并）
+</pre>
+
+<!-- ================= 4 ================= -->
+<h2 id="s4">4. Textual 新手课 —— 本项目用到的 10 个概念</h2>
+<p>每个概念按 <b>是什么 → 本项目哪里在用 → 最小例子</b> 讲。看完这章就能看懂第 5 章的逐文件精读。</p>
+
+<h3>4.1 App 类与 compose：搭界面的地方</h3>
+<p>Textual 程序 = 一个继承 <code>App</code> 的类。<code>compose()</code> 方法里"声明"界面长什么样：
+<b>yield 组件</b>就是放组件，<code>with 容器:</code> 就是开一个子区域。容器也是组件
+（<code>Horizontal</code> 横排、<code>Vertical</code> 竖排），用 <code>id=</code> 起名字，CSS 靠名字选中它。</p>
+<pre class="code">class GitNowApp(App):
+    TITLE = "GitNow"
+    CSS_PATH = "gitnow.tcss"          # 样式文件（相对本文件）
+
+    def compose(self):                       # app.py L57
+        with Horizontal(id="main"):          # 整屏横排容器
+            with Vertical(id="left"):        # 左列（竖排）
+                yield FileTreePanel(id="tree-panel")    # 左上
+                yield StagedPanel(id="staged-panel")    # 左下
+            yield RightViewer(id="viewer")               # 右侧
+        yield StatusBar(id="statusbar")      # 底部（dock: bottom 钉在最下）
+</pre>
+<p>之后任何地方都能用 <code>self.query_one("#tree-panel", FileTreePanel)</code> 拿到这个组件的引用
+（本项目把它们包成了 <code>tree_panel</code> 等 property，见 app.py L65-84）。</p>
+
+<h3 id="css">4.2 CSS：色块 + 只有焦点才有边框</h3>
+<p>Textual 的 CSS 和网页 CSS 很像：选择器可以是 <code>#id</code>、组件的 <b>Python 类名</b>（如
+<code>FileTreePanel</code>）、伪类 <code>:focus</code>。文件在 <code>CSS_PATH</code> 指向的
+<span class="file">gitnow.tcss</span>，改样式只动这一个文件。</p>
+<pre class="code">/* 左上：文件树 —— 一块深灰蓝色 */
+FileTreePanel {
+    height: 62%;            /* 占左列 62% 高，其余给下面的 staged */
+    background: #151c28;    /* 这就是"色块" */
+    border: round #151c28;  /* 关键技巧：边框颜色 = 背景色 → 看不见，但占着位置 */
+    padding: 0 1;
+}
+FileTreePanel:focus { border: round #7aa2f7; }  /* 拿到焦点 → 换成亮蓝色圆角框 */
+</pre>
+<div class="note">为什么边框一直存在只是"隐身"？如果焦点切换时才加边框，边框会挤压内容区导致整屏跳动。
+让未聚焦面板的边框颜色等于背景色，就同时做到了"看起来无线框"和"聚焦时不跳动"。
+改主题颜色时请保留这个套路。</div>
+
+<h3>4.3 BINDINGS 与 action_ 命名约定</h3>
+<p>给组件（或 App）定义类属性 <code>BINDINGS</code> 就能接按键。<code>Binding(键, 动作名)</code>
+里的动作名会自动映射到同名 <code>action_动作名</code> 方法：</p>
+<pre class="code">Binding("space", "stage_toggle")     # 按 Space → 自动调用 action_stage_toggle()
+Binding("P", "push")                 # 大小写敏感：P 是 Shift+p，和 p 是两个键
+Binding("j", "cursor_down", show=False)  # show=False: 不出现在底部键位条
+</pre>
+<p><b>按键的查找顺序</b>：当前焦点组件 → 它的父组件链 → 当前 Screen → App。
+所以同一颗 <span class="kbd">a</span>：焦点在文件树时走 FileTreePanel 的绑定，焦点在别处走 App 的
+<code>action_stage_all</code>——两条路殊途同归（都调 app.stage_all）。</p>
+<div class="warn">TextArea（提交输入框）会先消费所有字符键。所以在提交弹窗里打字不会触发
+App 的 <code>c</code>/<code>p</code> 等全局键——这是特性不是 bug，全局键只在没有组件消费时才轮到 App。</div>
+
+<h3>4.4 自定义消息：面板向 App 汇报</h3>
+<p>面板不该直接操作别的面板，而是<b>发消息</b>让 App 决定。三步：</p>
+<pre class="code"># ① 定义消息类（panels/tree.py）
+class FileHighlighted(Message):
+    def __init__(self, panel: str, path: str):
+        self.panel = panel; self.path = path
+        super().__init__()               # 必须调用
+
+# ② 面板里发出（消息会自动向上冒泡到 App）
+self.post_message(FileHighlighted("tree", path))
+
+# ③ App 里用 @on 接（app.py L163）
+@on(FileHighlighted)
+def on_file_highlighted(self, event):
+    self.set_selection(event.panel, event.path)
+</pre>
+<p>相关细节：<code>event.stop()</code> 可以阻止消息继续冒泡（viewer 的 LogNearEnd 就这么干的）；
+消息类名决定处理器查找名，用 <code>@on(消息类)</code> 最省心。</p>
+
+<h3>4.5 reactive 属性：赋值即生效</h3>
+<p>Textual 组件的一些属性是"响应式"的：赋值会自动触发重绘和事件。
+本项目用到的：<code>OptionList.highlighted</code>（当前高亮行号）、<code>Tree.cursor_line</code>、
+<code>Tree.show_root</code>。比如选中列表某行只需 <code>panel.highlighted = 3</code>，
+且这一下<b>会触发 OptionHighlighted 事件</b>——和用户按键完全一样。</p>
+<div class="warn">第 3 版调试时发现：<code>set_options()</code> 之后 <code>highlighted</code> 是 None
+（不是 0），所有读它的逻辑静默失效——包括"按 Enter 查看提交"。所以本项目每次重建列表后都显式
+<code>highlighted = 0</code>。你写新面板时记得同样的坑。</div>
+
+<h3>4.6 @work 后台线程 + call_from_thread</h3>
+<pre class="code">@work(thread=True, group="diff", exclusive=True)   # app.py L174
+def request_diff(self):
+    text = gitbackend.diff_worktree(...)            # 线程里跑 git，UI 不卡
+    self.call_from_thread(self.viewer.apply_diff,   # 回 UI 线程改界面
+                          path, badge, text, token)
+</pre>
+<ul>
+  <li><code>thread=True</code>：在后台线程执行（git 子进程会阻塞几百毫秒）。</li>
+  <li><code>group + exclusive=True</code>：同组的新请求会把还没跑完的旧请求作废——光标连按时只取最后一次。</li>
+  <li><code>call_from_thread</code>：后台线程里唯一合法的"碰界面"方式。</li>
+  <li>token 比对：见 2.2 ③。</li>
+</ul>
+
+<h3>4.7 on_mount / set_interval：启动与定时</h3>
+<p><code>on_mount</code> 在界面挂载完成后执行一次，适合做初始化（本项目：设标题、发首批请求、起定时器、设焦点）。
+<code>self.set_interval(3.0, 回调)</code> 每 3 秒调用一次回调（自动刷新，
+回调里会跳过"正在忙 / 弹窗打开"两种情况，app.py L98）。</p>
+
+<h3>4.8 弹窗：ModalScreen + dismiss + callback</h3>
+<pre class="code">App 侧:  self.push_screen(CommitModal(数量), 回调函数)     # app.py L330
+弹窗侧:  self.dismiss(message)    # 关闭自己，message 作为返回值传给回调
+                                  # dismiss(None) 表示取消
+</pre>
+<p>弹窗是独立 Screen（<code>len(self.screen_stack) &gt; 1</code> 可以判断"现在有弹窗吗"，
+自动刷新就是靠这个在弹窗期间暂停的）。弹窗自身也有 BINDINGS：Ctrl+S 提交、Esc 取消。</p>
+
+<h3>4.9 notify：右上角 toast</h3>
+<p><code>self.notify("文本", severity="error", timeout=10, markup=False)</code>。
+<b>凡是拼接了 git 输出/文件路径的文案，务必 <code>markup=False</code></b>——
+否则内容里的 <code>[</code> 会被当成富文本标记解析报错。</p>
+
+<h3>4.10 富文本 Text：给文字上色</h3>
+<p>列表行、diff 都是 rich 的 <code>Text</code> 对象：纯文字用
+<code>Text("abc", style="#565f89")</code>，一行多色用
+<code>Text.assemble(("M ", "bold red"), ("文件名", "#c0caf5"))</code>。
+本项目所有颜色常量集中在 <span class="file">theme.py</span>。Static 组件用
+<code>static.update(Text对象)</code> 整体刷新内容。</p>
+
+<!-- ================= 5 ================= -->
+<h2 id="s5">5. 逐文件精读</h2>
+
+<h3>5.1 gitnow/__main__.py —— 入口（20 行）</h3>
+<p>解析命令行参数（可选仓库路径，默认当前目录）→ 校验是 git 仓库 → 才 import 并运行 App。
+<b>App 的 import 放在校验之后是故意的</b>：报错路径不需要加载 Textual，启动更快、打包验证也更干净。</p>
+
+<h3>5.2 gitnow/models.py —— 数据结构（100 行）</h3>
+<p>核心是 <code>FileEntry</code>：一个文件 = 一个两位状态码 <code>xy</code>
+（来自 <code>git status --porcelain=v2</code>）。<b>读懂 xy 就读懂了整个状态系统</b>：</p>
+<table class="t">
+  <tr><th>xy</th><th>含义</th><th>树面板显示</th><th>暂存面板显示</th></tr>
+  <tr><td><code>M.</code></td><td>只改了工作区，未暂存</td><td>橙 M</td><td>不显示</td></tr>
+  <tr><td><code>.M</code></td><td>不可能出现（.M 表示只改了 index）</td><td>—</td><td>—</td></tr>
+  <tr><td><code>M.</code> 之前已 add → <code>MM</code></td><td>暂存后又改</td><td>橙 M（树里仍在）</td><td>绿 M</td></tr>
+  <tr><td><code>??</code></td><td>未跟踪（新文件）</td><td>蓝 ?</td><td>不显示（add 后变 A.）</td></tr>
+  <tr><td><code>A.</code></td><td>新文件已暂存</td><td>不显示（工作区无改动）</td><td>绿 A</td></tr>
+  <tr><td><code>D.</code> / <code>.D</code></td><td>删除（已暂存/未暂存）</td><td>红 D</td><td>红 D</td></tr>
+  <tr><td><code>UU</code> 等</td><td>合并冲突</td><td>亮红 UU</td><td>亮红 U</td></tr>
+</table>
+<p>四个派生属性是全项目的判断依据：<code>has_index_changes</code>（xy[0]≠. 且非未跟踪）、
+<code>has_wt_changes</code>（未跟踪或 xy[1]≠.）。<b>未跟踪文件要特判</b>：它的 xy 是 "??"，
+按字符判断会误报"有暂存改动"——这是修过的真实 bug。</p>
+<p><code>RepoStatus</code> 持有分支信息 + 全部 FileEntry，提供
+<code>entry(path)</code> 查单个文件、<code>worktree_entries / index_entries</code> 两个过滤视图、
+<code>signature</code>（供比对的指纹）。</p>
+
+<h3>5.3 gitnow/gitbackend.py —— git 唯一出口（280 行）</h3>
+<p>所有函数都是"拼参数 → 子进程 → 解析字符串"三段式。<b>全项目只有这里出现 subprocess</b>。</p>
+<pre class="code">def git(*args, cwd, allow_fail=False, timeout=60):
+    cmd = ["git",
+           "-c", "core.quotepath=false",   # 中文文件名不转义
+           "-c", "core.pager=cat",          # 禁止分页器（否则挂死）
+           "-c", "color.ui=false",          # 不要 ANSI 颜色码，纯文本好解析
+           *args]
+    proc = subprocess.run(cmd, cwd=str(cwd), env=_base_env(),
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
+    if proc.returncode != 0 and not allow_fail:
+        raise GitError(args, proc.returncode, proc.stderr)
+    return proc
+</pre>
+<p>常用函数与命令对照（完整表见附录 B）：</p>
+<pre class="code">status()      git status --porcelain=v2 --branch -z --untracked-files=all
+              # -z: NUL 分隔，文件名带空格/中文都安全
+              # -uall: 纯新增目录不折叠成 dir/，逐文件列出（没它 src/c.txt 只显示成 src/）
+diff_worktree git --no-pager diff --no-color -U3 -- :(literal)path
+diff_cached   同上 + --cached
+diff_untracked git --no-pager diff --no-index -- /dev/null path
+              # 退出码 1 = 有差异 = 正常；输出为空则兜底自己合成"全绿新增"diff
+log()         git log --pretty=%H%t%h%t%an%t%ad%t%d%t%s（TAB 分隔好切）
+stage()       git add -- :(literal)path     # :(literal) 让文件名里的 [ * ? 不当通配符
+unstage()     git restore --staged -- :(literal)path
+discard_worktree() 已跟踪 → git restore --；未跟踪 → 直接删文件并清理空父目录
+push()        git push；失败且"no upstream"且有 origin → git push -u origin 分支
+commit()      git commit -m message
+</pre>
+<div class="warn">环境统一在 <code>_base_env()</code>：GIT_PAGER=cat / PAGER=cat（没有它 git log 会启动
+分页器把子进程挂死）、GIT_OPTIONAL_LOCKS=0。新加 git 调用一律走 <code>git()</code>，不要自己
+subprocess。</div>
+
+<h3>5.4 gitnow/panels/tree.py —— 左上文件树（范例精读）</h3>
+<p>这是最典型的一个面板，<b>其他面板全是同一套模式</b>：子类化一个 Textual 组件 →
+类属性 BINDINGS → rebuild() 重建内容 → 高亮事件向外汇报 → action_ 方法调 app。</p>
+<pre class="code">class FileTreePanel(Tree):                 # 继承 Textual 的树组件
+    BINDINGS = [
+        Binding("space", "stage_toggle", "暂存/取消", show=True),  # show=True → 上键位条
+        Binding("a", "stage_all", ...),  Binding("u", "unstage_all", ...),
+        Binding("d", "discard", ...),    Binding("e", "edit", ...),
+        Binding("t", "toggle_mode", ...),
+        Binding("j", "cursor_down", show=False),   # vim 键，不占键位条
+        Binding("k", "cursor_up",   show=False),
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__("files", **kwargs)
+        self.show_root = False        # 隐藏根节点（注意：是属性，不是构造参数）
+        self.mode = "changes"         # changes=只看改动 / all=全部文件
+        self._file_nodes = {}         # path -> TreeNode，重建后 O(1) 找回光标
+
+    def rebuild(self, st, all_files, mode, keep_path):
+        self.clear()                                  # 清空旧树（保留根）
+        path_map = 改动文件字典 或 全部文件字典
+        nested = 嵌套字典                                # "src/c.txt" → {"src/": {"c.txt": ...}}
+        self._build_tree(self.root, nested, path_map)  # 递归建节点，目录在前
+        # 重建后找回光标：优先 keep_path（App 传来的当前选中），否则第一个文件
+        if target in self._file_nodes:
+            self.select_node(node)                     # 设光标（会触发 NodeHighlighted）
+            self.scroll_to_node(node, animate=False)
+
+    def _label(self, name, entry):                     # 每行的富文本：状态字母 + 文件名
+        letter = entry.wt_letter                       # M / D / ? ...
+        color = theme.WT_COLORS[letter]
+        return Text.assemble((f"{letter} ", f"bold {color}"), (name, theme.FG))
+
+    @on(Tree.NodeHighlighted)                          # 光标落在某行 → 汇报给 App
+    def _node_highlighted(self, event):
+        if data.get("path") and self.has_focus:        # 目录行没有 path；无焦点不发
+            self.post_message(FileHighlighted("tree", data["path"]))
+
+    def on_focus(self):                                # 拿到焦点时补发一次当前选中
+        if self.highlighted_path:
+            self.post_message(FileHighlighted("tree", self.highlighted_path))
+
+    def action_stage_toggle(self):                     # Space → 调 app 的统一入口
+        path = self._cursor_file()
+        if path: self.app.stage_toggle("tree", path)
+</pre>
+<div class="warn">血泪坑：<b>子类方法名不能和基类内部方法撞名</b>。第一版把建树方法命名为
+<code>_build</code>，恰好是 Tree 内部的建行方法，结果 Textual 内部 watcher 调它时报"缺参数"，
+错误出现在 compose——离真正原因十万八千里。给子类写私有方法前先 <code>dir(基类)</code> 查一下，
+或统一加前缀（如 <code>_build_tree</code>）。</div>
+
+<h3>5.5 gitnow/panels/staged.py —— 左下暂存列表</h3>
+<p>继承 <code>OptionList</code>（可滚动单行列表）。模式和树完全一样，只是 rebuild 换成了
+<code>clear_options() + add_options([Option(文本, id=路径), ...])</code>，
+恢复高亮用 <code>get_option_index(id)</code> 后给 <code>self.highlighted</code> 赋值。
+Space 语义反转：这里按 Space 是<b>取消</b>暂存（app.stage_toggle 里 src=="staged" 分支）。</p>
+
+<h3>5.6 gitnow/panels/viewer.py —— 右侧三视图</h3>
+<p>一个 <code>VerticalScroll</code> 容器装两个互斥的孩子：<code>LogList</code>（OptionList，
+显示 log）和 <code>viewer-content</code>（Static，显示 diff/提交详情），靠 <code>display</code> 切换。</p>
+<pre class="code">class RightViewer(VerticalScroll):
+    can_focus = True                # 让 diff 模式下容器自己能接收焦点/按键
+    BINDINGS = [j/k 滚动, Esc/Backspace → action_back]
+
+    def populate_log(self, entries, complete):      # 模式=显示 log
+        self.mode = "log";  self.token = None
+        self.log_list.set_options([Option(self._log_line(e), id=e.sha) ...])
+        if self.log_list.highlighted is None:
+            self.log_list.highlighted = 0           # 见 4.5 的坑
+
+    def apply_diff(self, path, badge, text, token):
+        if token != self.token: return              # 过期结果丢弃
+        self.mode = "diff"
+        t = Text(); 徽章 + 路径; self._append_diff(t, text); self._show_static(t)
+
+    def _append_diff(self, t, text):                # 逐行上色
+        for line in lines:
+            "diff --git" → 蓝 | "@@" → 紫 | "+..." → 绿底 | "-..." → 红底
+            超过 MAX_DIFF_LINES(5000) 行 → 截断并加提示
+</pre>
+<p><code>LogList</code> 是 OptionList 子类：Enter → 发
+<code>CommitRequested(sha)</code>；光标接近底部（差 ≤3 行）→ 发 <code>LogNearEnd()</code>，
+App 收到后自动翻页加载（<code>--skip</code> 继续 log）。</p>
+
+<h3>5.7 gitnow/panels/statusbar.py —— 状态栏</h3>
+<p>一个 <code>Horizontal</code> 装四个 <code>Static</code>（分支 / ahead-behind / 计数 / 键位条）。
+<code>update_status(st)</code> 用富文本 markup 字符串整体刷新。键位条内容来自
+<span class="file">keys.py</span> 的 <code>STATUS_BAR_KEYS</code>（完整表在帮助面板，避免底部挤不下）。</p>
+
+<h3>5.8 gitnow/panels/modals.py —— 三个弹窗</h3>
+<p><code>CommitModal</code>（TextArea 输入说明，Ctrl+S 提交）、<code>ConfirmModal</code>
+（y/n/Esc 确认框，discard 用）、<code>HelpModal</code>（读 keys.py 渲染全键位表）。
+都继承 <code>ModalScreen</code>，模式固定：<b>compose 摆控件 → BINDINGS 接键 → dismiss(返回值)</b>。</p>
+
+<h3>5.9 gitnow/app.py —— 总控（400 行，项目的"大脑"）</h3>
+<p>职责清单（都是第 3 章流程图里出现过的）：</p>
+<ul>
+  <li>compose：组装五个部件（L57）</li>
+  <li>全局 BINDINGS：Tab/h/l 焦点、t、r、c、P、p、a、u、?、Esc、q（L28）</li>
+  <li>refresh_all / _apply_status：单一刷新入口（L104）</li>
+  <li>load_log / load_more_log：log 加载与分页（L136）</li>
+  <li>set_selection / request_diff：选择与 diff（L167）</li>
+  <li>_mutate 三件套：所有写操作的统一通道（L296）</li>
+  <li>action_commit / push / pull / discard_request（L325 起）</li>
+  <li>焦点循环：focus_targets = [树, 暂存, viewer或log列表]，Tab 正序 h/l 反序（L244）</li>
+</ul>
+
+<h3>5.10 gitnow/gitnow.tcss + theme.py + keys.py</h3>
+<ul>
+  <li><b>tcss</b>：面板底色/边框/比例、状态栏、弹窗样式。每段都有中文注释说明对应哪块界面。</li>
+  <li><b>theme.py</b>：Python 侧颜色常量（WT_COLORS 状态色、INDEX_COLORS 暂存色、DIFF_STYLES diff 行配色）。
+      记住分工：<b>底色边框在 tcss，文字颜色在 theme.py</b>。</li>
+  <li><b>keys.py</b>：所有键位的"单一事实来源"，帮助面板和状态栏都从这里读——加键位时改这里一份，两处自动同步。</li>
+</ul>
+
+<!-- ================= 6 ================= -->
+<h2 id="s6">6. 修改任务手册（照着做就能改）</h2>
+
+<h3>6.0 修改前必读：开发循环</h3>
+<pre class="flow">
+改代码 → 跑冒烟测试（必须绿）→ 实际打开看效果 →（改了界面就）重截图看一眼
+     cd C:\Users\Administrator\Documents\Code\GitNow
+     C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe tests\smoke_test.py
+     gitnow   （任意 git 仓库里启动）
+</pre>
+
+<h3>6.1 改颜色、边框、布局比例</h3>
+<p class="step">第 1 步.</p> 打开 <span class="file">gitnow/gitnow.tcss</span>，每个选择器上方有中文注释标明是哪块界面。
+<p class="step">第 2 步.</p> 举例：把左列从 40% 加宽到 45%，树占比调到一半：
+<pre class="code">#left { width: 45%; ... }        /* 原来 40% */
+FileTreePanel { height: 50%; ... } /* 原来 62%，剩 1fr 给暂存面板 */</pre>
+<p class="step">第 3 步.</p> 文字类颜色（状态字母、diff 行）在 <span class="file">theme.py</span> 改常量，
+两处职责别搞混：<b>背景/边框 → tcss；文字 → theme.py</b>。</p>
+
+<h3>6.2 新增一个按键（完整实例：按 i 把文件加入 .gitignore）</h3>
+<p class="step">第 1 步. gitbackend.py 加功能函数</p>
+<pre class="code">def ignore_file(cwd, path: str) -> str:
+    ignore = Path(cwd) / ".gitignore"
+    with ignore.open("a", encoding="utf-8") as f:
+        f.write(path.replace("\\", "/") + "\n")
+    return f"已加入 .gitignore: {path}"</pre>
+<p class="step">第 2 步. app.py 加动作（走 _mutate 通道，自动获得后台执行+toast+刷新）</p>
+<pre class="code">def ignore_file(self, path: str) -> None:
+    self._mutate(gitbackend.ignore_file, (path,), "忽略文件")</pre>
+<p class="step">第 3 步. panels/tree.py 加绑定和方法</p>
+<pre class="code">BINDINGS = [..., Binding("i", "ignore", "忽略", show=False)]
+
+def action_ignore(self) -> None:
+    path = self._cursor_file()
+    if path: self.app.ignore_file(path)</pre>
+<p class="step">第 4 步. keys.py 的 FILE_KEYS 加一行</p> <code>("i", "加入 .gitignore")</code>
+—— 帮助面板自动显示（状态栏太挤就不用加）。
+<p class="step">第 5 步.</p> 跑冒烟测试 + 手动验证。完成。</p>
+<div class="note">规律：<b>gitbackend 一个函数 + app 一个入口 + 面板一个 Binding</b>。
+所有写操作都经过 _mutate，自动拥有：后台线程、错误 toast、成功 toast、自动刷新——你一行都不用多写。</div>
+
+<h3>6.3 调整右侧默认视图 / 树默认显示全部文件</h3>
+<pre class="code"># app.py __init__ 里（L49）：
+self.tree_mode = "all"     # 原值 "changes"；刷新 worker 已兼容 all（自动去拉 ls-files）</pre>
+
+<h3>6.4 新增一个面板（模板）</h3>
+<p class="step">第 1 步.</p> 新建 <span class="file">gitnow/panels/example.py</span>：
+<pre class="code">from textual.containers import Vertical
+from textual.widgets import Static
+
+class ExamplePanel(Vertical):
+    can_focus = True                          # 不加这个 Tab 切不进来
+    def compose(self):
+        yield Static("我的新面板")
+    def action_hello(self):                   # 绑定按键后可用
+        self.app.notify("hi")</pre>
+<p class="step">第 2 步.</p> app.py：compose 里在合适位置 <code>yield ExamplePanel(id="example")</code>
+（注意包一层容器并给它比例）。
+<p class="step">第 3 步.</p> tcss 加样式（底色 + 隐身边框 + :focus 亮边框，抄现成面板改颜色）。
+<p class="step">第 4 步.</p> app.py 的 <code>focus_targets</code> 列表里加入它，Tab 循环才能到达。
+<p class="step">第 5 步.</p> 需要汇报选中/事件时：定义 Message 子类 + post_message + App @on（抄 FileHighlighted 三件套）。
+
+<h3>6.5 改 log 行显示内容</h3>
+<p>只改 <span class="file">viewer.py</span> 的 <code>_log_line(e: LogEntry)</code>。
+LogEntry 字段：sha / short / author / date / subject / refs。
+例如在行尾加哈希全串：<code>t.append("  " + e.sha[:16], style=theme.FG_DIM)</code>。
+要新字段（如邮箱）→ gitbackend.log 的 --pretty 加占位符 + models.LogEntry 加字段 + 解析处加一列。</p>
+
+<h3>6.6 改状态栏</h3>
+<p>显示逻辑在 <span class="file">statusbar.py</span> 的 <code>update_status</code>（markup 字符串拼装）；
+键位条内容在 <span class="file">keys.py</span> 的 <code>STATUS_BAR_KEYS</code>。注意总宽别超终端列数，
+超了会被截断。</p>
+
+<h3>6.7 改 diff 配色 / 加文件类型图标</h3>
+<p>行配色：<span class="file">theme.py</span> 的 <code>DIFF_STYLES</code>；
+行分类逻辑：<span class="file">viewer.py</span> 的 <code>_append_diff</code>（按行首字符分类）。
+状态图标：<span class="file">tree.py</span> 的 <code>_label</code> / <span class="file">staged.py</span> rebuild。</p>
+
+<h3>6.8 加一个 git 功能的完整流程（以 stash 为例，暂未实现的留位）</h3>
+<pre class="flow">
+① gitbackend.py:  def stash_list() / stash_push() ...（照 git() 三段式写）
+② models.py:       需要 new 数据结构就加（如 StashEntry）
+③ app.py:          action_stash → _mutate(...)；复杂交互（列表选择）加一个 ModalScreen
+④ panels/keys.py:  加 Binding 与键位文案
+⑤ tests:           smoke_test.py 加一段流程断言
+</pre>
+
+<!-- ================= 7 ================= -->
+<h2 id="s7">7. 调试与测试</h2>
+
+<h3>7.1 冒烟测试（tests/smoke_test.py）</h3>
+<p>原理：临时目录里 <code>git init</code> 一个假仓库并制造改动 → 用 Textual 的
+<code>app.run_test()</code> <b>无头运行真实 App</b>（不需要终端窗口）→
+<code>pilot.press("j")</code> 等模拟按键 → 断言状态和 git 结果 → 顺带导出界面截图。</p>
+<pre class="code">async with app.run_test(size=(120, 40)) as pilot:
+    await wait_for(lambda: app.status is not None, pilot)   # 轮询等后台线程
+    await pilot.press("j")            # 模拟按键
+    await pilot.press("space")        # 暂存
+    await wait_for(lambda: len(app.status.index_entries) == 1, pilot)
+    await pilot.press("c")            # 打开提交弹窗 ...</pre>
+<p><b>加自己的测试</b>：照抄一段 press + wait_for + assert。注意等待条件必须"轮询"
+（wait_for 内部循环 pause），单次 pilot.pause 之后线程任务多半还没跑完。</p>
+
+<h3>7.2 看界面效果（截图链路）</h3>
+<p>冒烟测试最后会调用 <code>app.save_screenshot()</code> 生成 <span class="file">docs/preview.svg</span>
+（整屏矢量截图）。用浏览器打开这个文件即可查看真实渲染效果。想截特定状态，在测试里把 save_screenshot
+挪到相应按键之后。</p>
+
+<h3>7.3 常见报错对照表</h3>
+<table class="t">
+  <tr><th>症状</th><th>原因</th><th>修法</th></tr>
+  <tr><td>compose() returned an invalid result ... missing positional arguments</td>
+      <td>子类方法名撞了基类内部方法（如 Tree._build）</td><td>改名加前缀（_build_tree）</td></tr>
+  <tr><td>列表建好了但 Enter 没反应</td><td>OptionList.highlighted 是 None</td><td>重建后显式 highlighted = 0</td></tr>
+  <tr><td>右侧视图"自己跳走"</td><td>程序化高亮触发了选中事件</td><td>高亮处理加 has_focus 守卫 + on_focus 补发</td></tr>
+  <tr><td>git add 报 pathspec did not match</td><td>路径没包 :(literal)，或列表参数被拆成单字符</td><td>用 _lit()；传参写 (the_list,) 别写 tuple(the_list)</td></tr>
+  <tr><td>新文件只显示目录名 src/</td><td>status 目录折叠</td><td>加 --untracked-files=all（已内置）</td></tr>
+  <tr><td>程序卡死不动</td><td>git 起了分页器</td><td>确认走 gitbackend.git()（已带 GIT_PAGER=cat）</td></tr>
+  <tr><td>界面跳来跳去</td><td>聚焦时才加边框挤压内容</td><td>保持"隐身边框"技巧（边框色=背景色）</td></tr>
+  <tr><td>toast 报 rich markup 错误</td><td>内容里有 [ 没转义</td><td>notify(..., markup=False)</td></tr>
+  <tr><td>exe 里管道输出中文乱码</td><td>Windows 代码页 GBK，非程序问题</td><td>忽略；TUI 界面内正常</td></tr>
+</table>
+
+<!-- ================= 8 ================= -->
+<h2 id="s8">8. 打包成 exe</h2>
+<pre class="flow">
+build.bat  =  python -m PyInstaller --onefile --name GitNow
+              --collect-all textual --collect-all gitnow gitnow_exe.py
+</pre>
+<ul>
+  <li><b>gitnow_exe.py 是什么</b>：一行包装脚本。打包入口不能直接用包里的 __main__.py——
+      脱离包环境后 <code>from . import ...</code> 相对导入会炸。</li>
+  <li><b>两个 --collect-all 缺一不可</b>：textual 的隐藏组件/资源；gitnow 自己的 .tcss 主题文件
+      （不收集的话 CSS_PATH 在解包目录里找不到，界面裸奔或崩溃）。</li>
+  <li>产物 <span class="file">dist/GitNow.exe</span>（~15MB 单文件，免装 Python）。首次启动有几秒解压延迟。</li>
+  <li><b>验证方法</b>：非仓库路径应中文报错退出；但注意这测试在 Textual 导入<b>之前</b>就结束了，
+      测不到打包问题——必须再用 pty 真跑一次 TUI（渲染出内容、按 q 退出码 0）才算数。</li>
+</ul>
+
+<!-- ================= 9 ================= -->
+<h2 id="s9">9. 附录</h2>
+
+<h3>9.1 全部键位</h3>
+<table class="t">
+  <tr><th>区域</th><th>键</th><th>作用</th></tr>
+  <tr><td rowspan="9">全局</td><td><span class="kbd">Tab</span> / <span class="kbd">h</span> / <span class="kbd">l</span></td><td>切换焦点面板（文件树 → 已暂存 → 右侧）</td></tr>
+  <tr><td><span class="kbd">t</span></td><td>文件树：改动文件 ↔ 全部文件</td></tr>
+  <tr><td><span class="kbd">r</span></td><td>刷新（status + log）</td></tr>
+  <tr><td><span class="kbd">Esc</span></td><td>取消选中 → 右侧显示 log</td></tr>
+  <tr><td><span class="kbd">c</span></td><td>提交（弹窗，Ctrl+S 提交 / Esc 取消）</td></tr>
+  <tr><td><span class="kbd">P</span> / <span class="kbd">p</span></td><td>push / pull（--ff-only）</td></tr>
+  <tr><td><span class="kbd">a</span> / <span class="kbd">u</span></td><td>全部暂存 / 全部取消暂存</td></tr>
+  <tr><td><span class="kbd">?</span></td><td>帮助面板</td></tr>
+  <tr><td><span class="kbd">q</span></td><td>退出</td></tr>
+  <tr><td rowspan="4">文件区（树/暂存）</td><td><span class="kbd">↑↓</span> / <span class="kbd">j k</span></td><td>移动（移动即在右侧显示 diff）</td></tr>
+  <tr><td><span class="kbd">Space</span></td><td>暂存 / 取消暂存</td></tr>
+  <tr><td><span class="kbd">d</span></td><td>丢弃改动（确认弹窗；未跟踪文件会被删除）</td></tr>
+  <tr><td><span class="kbd">e</span></td><td>用编辑器打开（EDITOR，默认记事本）</td></tr>
+  <tr><td rowspan="3">右侧</td><td><span class="kbd">j k</span> / PgUp / PgDn</td><td>滚动；log 滚到底自动分页加载</td></tr>
+  <tr><td><span class="kbd">Enter</span></td><td>log 中查看提交详情（元信息+stat+patch）</td></tr>
+  <tr><td><span class="kbd">Esc</span></td><td>返回 / 取消选中</td></tr>
+  <tr><td>确认弹窗</td><td><span class="kbd">y</span> / <span class="kbd">n</span> / <span class="kbd">Esc</span></td><td>确认 / 取消</td></tr>
+</table>
+
+<h3>9.2 git 命令映射表（gitbackend.py）</h3>
+<table class="t">
+  <tr><th>功能</th><th>命令</th></tr>
+  <tr><td>状态+分支</td><td>git status --porcelain=v2 --branch -z --untracked-files=all</td></tr>
+  <tr><td>全部文件</td><td>git ls-files -z --cached --others --exclude-standard</td></tr>
+  <tr><td>工作区 diff</td><td>git --no-pager diff --no-color -U3 -- :(literal)path</td></tr>
+  <tr><td>暂存区 diff</td><td>git --no-pager diff --cached --no-color -U3 -- :(literal)path</td></tr>
+  <tr><td>未跟踪 diff</td><td>git --no-pager diff --no-index --no-color -U3 -- /dev/null path</td></tr>
+  <tr><td>历史</td><td>git --no-pager log --max-count=200 --skip=N --date=format-local:"%Y-%m-%d %H:%M" --pretty=...</td></tr>
+  <tr><td>提交详情</td><td>git --no-pager show --no-color --stat --patch -U3 sha</td></tr>
+  <tr><td>暂存/取消</td><td>git add -- :(literal)path / git restore --staged -- :(literal)path / git reset（全部）</td></tr>
+  <tr><td>丢弃</td><td>git restore -- :(literal)path；未跟踪 → 删文件+清空目录</td></tr>
+  <tr><td>提交</td><td>git commit -m "message"</td></tr>
+  <tr><td>push</td><td>git push（无 upstream 自动 -u origin branch）</td></tr>
+  <tr><td>pull</td><td>git pull --ff-only</td></tr>
+</table>
+
+<h3>9.3 本项目用到的 Textual API 速查</h3>
+<table class="t">
+  <tr><th>API</th><th>在哪用</th><th>说明 / 坑</th></tr>
+  <tr><td>App / compose / CSS_PATH</td><td>app.py</td><td>yield 组件声明界面；容器 with 嵌套</td></tr>
+  <tr><td>Binding / action_ 前缀</td><td>全部面板 + app</td><td>动作名自动映射 action_ 方法；show=False 不上键位条</td></tr>
+  <tr><td>@on(消息类) / post_message</td><td>面板→App 通信</td><td>消息自动冒泡；event.stop() 拦截</td></tr>
+  <tr><td>@work(thread=True, group, exclusive)</td><td>app.py 全部 git 调用</td><td>线程里禁止直接碰组件</td></tr>
+  <tr><td>call_from_thread</td><td>worker 回填</td><td>后台线程改 UI 的唯一方式</td></tr>
+  <tr><td>set_interval</td><td>on_mount</td><td>3 秒自动刷新</td></tr>
+  <tr><td>push_screen(screen, cb) / dismiss(v)</td><td>modals</td><td>弹窗返回值经 cb 接收</td></tr>
+  <tr><td>notify(..., markup=False)</td><td>所有 toast</td><td>含 [ ] 的内容必须关 markup</td></tr>
+  <tr><td>query_one("#id", 类)</td><td>app.py properties</td><td>按 id 找组件</td></tr>
+  <tr><td>Tree: node.add / select_node / scroll_to_node / cursor_node</td><td>tree.py</td><td>show_root 是属性非构造参数</td></tr>
+  <tr><td>OptionList: set_options / get_option_index / highlighted / option_count</td><td>staged.py / viewer.py</td><td>重建后 highlighted 是 None，要显式置 0</td></tr>
+  <tr><td>Static.update(Text)</td><td>viewer / statusbar</td><td>整体替换内容</td></tr>
+  <tr><td>can_focus / has_focus / focus()</td><td>焦点系统</td><td>viewer 容器 can_focus=True 才能接键</td></tr>
+  <tr><td>border_title</td><td>三个面板</td><td>边框上的标题（配合隐身边框=彩色小标题）</td></tr>
+  <tr><td>screen_stack</td><td>app.py</td><td>len&gt;1 表示弹窗打开，自动刷新据此暂停</td></tr>
+  <tr><td>App.run_test(size=...) + pilot</td><td>tests/smoke_test.py</td><td>无头自动化测试入口</td></tr>
+  <tr><td>save_screenshot()</td><td>tests</td><td>导出 SVG 截图，浏览器打开查看</td></tr>
+</table>
+
+<h3>9.4 学习路径建议</h3>
+<pre class="flow">
+第一刀：改 tcss 里一个颜色 → 跑起来看效果        （体感样式系统）
+第二刀：按 6.2 加一个 "i 忽略文件" 键位           （走通三步模式）
+第三刀：对照第 3 章流程图读 tree.py              （读懂一个面板 = 读懂所有面板）
+第四刀：读 app.py 的 refresh_all / _mutate       （读懂全局骨架）
+第五刀：改冒烟测试，加一段自己的断言              （学会安全地改）
+</pre>
+
+<div class="note">
+文档对应代码版本：GitNow v0.1.0（Textual 8.2.8）。Textual API 迭代较快，升级依赖后若行为不符，
+先查 9.3 速查表里的条目是否仍存在（python -c "from textual.widgets import Tree; print(dir(Tree))"）。
+</div>
+
+</div>
+<script>
+// 极简代码高亮：注释/字符串/关键字/装饰器/数字（无外部依赖）
+(function(){
+  var KW = /\b(def|class|return|if|elif|else|for|while|import|from|as|with|try|except|finally|raise|yield|lambda|not|and|or|in|is|None|True|False|self|pass|break|continue|global|async|await)\b/g;
+  document.querySelectorAll('pre.code').forEach(function(pre){
+    var txt = pre.textContent, out = '', i = 0, n = txt.length, tok;
+    function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    function cls(re, s){ return s.replace(re, '<span class="k">$1</span>'); }
+    while (i < n) {
+      var ch = txt[i];
+      if (ch === '#') {                       // 行注释
+        var e = txt.indexOf('\n', i); if (e < 0) e = n;
+        out += '<span class="c">' + esc(txt.slice(i, e)) + '</span>'; i = e; continue;
+      }
+      if (ch === '"' || ch === "'") {         // 字符串
+        var j = i + 1;
+        while (j < n && txt[j] !== ch) { if (txt[j] === '\\') j++; j++; }
+        out += '<span class="s">' + esc(txt.slice(i, j + 1)) + '</span>'; i = j + 1; continue;
+      }
+      if (ch === '@' && (i === 0 || txt[i-1] === '\n')) {   // 装饰器
+        var e2 = i; while (e2 < n && !/\s/.test(txt[e2])) e2++;
+        out += '<span class="d">' + esc(txt.slice(i, e2)) + '</span>'; i = e2; continue;
+      }
+      // 普通字符：攒到下一个特殊字符
+      var k = i;
+      while (k < n && '#"\''.indexOf(txt[k]) < 0 && !(txt[k]==='@' && (k===0||txt[k-1]==='\n'))) k++;
+      var seg = esc(txt.slice(i, k));
+      seg = seg.replace(KW, '<span class="k">$1</span>');
+      seg = seg.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="n">$1</span>');
+      out += seg; i = k;
+    }
+    pre.innerHTML = out;
+  });
+})();
+</script>
+</body>
+</html>
